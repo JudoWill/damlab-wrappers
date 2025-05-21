@@ -1,0 +1,34 @@
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__bam2csv = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__bam2csv__all:
+    input:
+        files = [TEST_ROOT_cigarmath__bam2csv/'test_output/test_output.csv'],
+        tests = [TEST_ROOT_cigarmath__bam2csv/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__bam2csv/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__bam2csv/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__bam2csv} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__bam2csv:
+    input:
+        TEST_ROOT_cigarmath__bam2csv / 'test_output/test.bam'
+    output:
+        TEST_ROOT_cigarmath__bam2csv / 'test_output/test_output.csv'
+    params:
+        fields = ["query_name", "reference_name", "reference_start", "query_sequence", "NM"]
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__bam2csv.parent}"
+
+
+rule:
+    input:
+        TEST_ROOT_cigarmath__bam2csv / '../../test_data/test.sam'
+    output:
+        temp(TEST_ROOT_cigarmath__bam2csv / 'test_output/test.bam')
+    params:
+        extra = '-n'
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 

@@ -29,6 +29,7 @@ include: "example/api/test/Snakefile"
 include: "barcode/extract/test/Snakefile"
 include: "barcode/correct/test/Snakefile"
 include: "cigarmath/bam2gel/test/Snakefile"
+include: "cigarmath/bam2csv/test/Snakefile"
 include: "cigarmath/deletion_frequency/test/Snakefile"
 include: "cigarmath/maximal_deletion_size/test/Snakefile"
 include: "cigarmath/pileup/test/Snakefile"
@@ -59,6 +60,7 @@ rule test_cpu:
         rules.test_barcode__extract__all.log,
         rules.test_barcode__correct__all.log,
         rules.test_cigarmath__bam2gel__all.log,
+        rules.test_cigarmath__bam2csv__all.log,
         rules.test_cigarmath__DF__all.log,
         rules.test_cigarmath__MDS__all.log,
         rules.test_cigarmath__pileup__all.log,
@@ -68,7 +70,7 @@ rule test_cpu:
         rules.test_pandas__merge__all.log,
         rules.test_phylo__fasttree__all.log,
         rules.test_phylo__phytreeviz__all.log,
-        rules.test_phylo__reroot__all.log
+        rules.test_phylo__reroot__all.log,
 
 
 rule test_gpu:

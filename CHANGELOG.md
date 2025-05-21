@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Collect wrapper level changes here until merged.
 
+  - [`cigarmath/bam2csv`](cigarmath/bam2csv/README.md) [0.0.1] - Wrapper for extracting fields from a SAM/BAM file into a CSV.
+
 ## [0.0.2] - 2025-05-19
 
 ### Added

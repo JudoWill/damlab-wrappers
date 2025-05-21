@@ -1,0 +1,7 @@
+name: bam2csv
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - pysam
+  - python
