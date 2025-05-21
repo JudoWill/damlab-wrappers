@@ -3,8 +3,10 @@ TEST_ROOT_barcode__extract = Path(workflow.snakefile).parent
 
 rule test_barcode__extract__all:
     input:
-        files = [TEST_ROOT_barcode__extract/'test_output/test_output.bam',
-                 TEST_ROOT_barcode__extract/'test_output/test_metrics.yaml',
+        files = [TEST_ROOT_barcode__extract/'test_output/test_inner.bam',
+                 TEST_ROOT_barcode__extract/'test_output/test_inner.yaml',
+                 TEST_ROOT_barcode__extract/'test_output/test_whole.bam',
+                 TEST_ROOT_barcode__extract/'test_output/test_whole.yaml',
                  ],
         tests = [TEST_ROOT_barcode__extract/"tests.py"]
     conda: 'env.yaml'
@@ -13,14 +15,28 @@ rule test_barcode__extract__all:
         stderr = TEST_ROOT_barcode__extract/"test_output/pytest.stderr.log"
     shell: "cd {TEST_ROOT_barcode__extract} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_barcode__extract__extract_barcodes:
+rule test_barcode__extract__extract_inner:
     input:
         TEST_ROOT_barcode__extract/'../../valid.bam'
     output:
-        TEST_ROOT_barcode__extract/'test_output/test_output.bam',
-        metrics=TEST_ROOT_barcode__extract/'test_output/test_metrics.yaml'
+        TEST_ROOT_barcode__extract/'test_output/test_inner.bam',
+        metrics=TEST_ROOT_barcode__extract/'test_output/test_inner.yaml'
     params:
         builtin='SIVNFL,SIVmac239m2',
+        barcode_tag='CR',
+        umi_tag='OX',
+        sample_name = 'sample_name'
+    wrapper:
+        f"file:{TEST_ROOT_barcode__extract.parent}"
+
+rule test_barcode__extract__extract_whole_barcodes:
+    input:
+        TEST_ROOT_barcode__extract/'../../valid.bam'
+    output:
+        TEST_ROOT_barcode__extract/'test_output/test_whole.bam',
+        metrics=TEST_ROOT_barcode__extract/'test_output/test_whole.yaml'
+    params:
+        builtin='SIVNFL,whole_barcode',
         barcode_tag='CR',
         umi_tag='OX',
         sample_name = 'sample_name'

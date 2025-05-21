@@ -4,7 +4,7 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2024"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 import pysam
 import regex
@@ -17,6 +17,7 @@ if "snakemake" not in locals():
 
 def _build_siv_barcode(strain, i, d, s):
 
+    umi_length = 10
     left = 'cctcctccccctccaggactagcataa'
     right = 'atggaagaaagacctccagaaaatga'
     # Taken from https://journals.asm.org/doi/full/10.1128/jvi.01420-19
@@ -42,10 +43,14 @@ def _build_siv_barcode(strain, i, d, s):
     elif strain == 'cSHIV224M':
         inner_left =  'ACCGGACAGCGT'
         inner_right = 'CACAAGTCCGGT'
+    elif strain == 'whole_barcode':
+        inner_left = ''
+        inner_right = ''
+        umi_length = 34
     else:
         raise ValueError(f"Unknown strain: {strain}")
 
-    return {'barcode_primer': f'({left}{inner_left}){{i<={i},d<={d},s<={s}}}(?<umi>.{{10}})({inner_right}{right}){{i<={i},d<={d},s<={s}}}'}
+    return {'barcode_primer': f'({left}{inner_left}){{i<={i},d<={d},s<={s}}}(?<umi>.{{{umi_length}}})(?<barcode>{inner_right}{right}){{i<={i},d<={d},s<={s}}}'}
 
 # Built-in regex patterns
 BUILTIN_PATTERNS = {
@@ -183,19 +188,19 @@ with open(bam_in_path, mode='rb') as handle:
                 has_right = False
                 
                 # Extract barcode
-                barcode = extract_umi(patterns['BARCODE_PRIMER'], read.query_sequence, default='N'*10)
+                barcode = extract_umi(patterns['BARCODE_PRIMER'], read.query_sequence, default='')
                 if not all(b == 'N' for b in barcode):
                     reads_processed['barcode'] += 1
                     has_barcode = True
                 read.set_tag(bc_tag, barcode, 'Z')
                 
                 # Extract UMIs
-                left_umi = extract_umi(patterns['LEFT_PRIMER'], read.query_sequence, default='N'*18)
+                left_umi = extract_umi(patterns['LEFT_PRIMER'], read.query_sequence, default='')
                 if not all(b == 'N' for b in left_umi):
                     reads_processed['left_umi'] += 1
                     has_left = True
                     
-                right_umi = extract_umi(patterns['RIGHT_PRIMER'], read.query_sequence, default='N'*18)
+                right_umi = extract_umi(patterns['RIGHT_PRIMER'], read.query_sequence, default='')
                 if not all(b == 'N' for b in right_umi):
                     reads_processed['right_umi'] += 1
                     has_right = True

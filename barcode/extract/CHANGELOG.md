@@ -5,6 +5,9 @@ All notable changes to this wrapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-05-21
+   - Added `whole_barcode` as a built-in for extracting the entire barcode between VPX and VPU. 
+
 ## [1.1.0] - 2025-05-19
   ### Added
   - Support for SIVmac239M, SIVmac239m2, SIVmac239Opt5M, bSHIV1054M, bSHIVAD8EOM, cSHIV174M, cSHIV224M viruses in the builtin parameters.
