@@ -1,14 +1,14 @@
 """Wrapper for converting BAM/SAM files to CSV with specified fields"""
 
 __author__ = "Will Dampier"
-__copyright__ = "Copyright 2024"
+__copyright__ = "Copyright 2025"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "0.0.1"
 
 import pysam
 import csv
-from typing import List, Dict, Any
+from typing import Any
 
 if "snakemake" not in locals():
     import snakemake
@@ -26,12 +26,12 @@ def get_field_value(segment: pysam.AlignedSegment, field: str) -> Any:
     # Handle standard BAM fields
     if hasattr(segment, field):
         return getattr(segment, field)
-    
+
     # Handle tags (e.g., 'NM:i:1' -> 'NM')
-    if field in segment.tags:
+    try:
         return segment.get_tag(field)
-    
-    return None
+    except KeyError:
+        return None
 
 # Get input/output files
 input_bam = snakemake.input[0]

@@ -18,17 +18,15 @@ rule test_cigarmath__bam2csv:
     output:
         TEST_ROOT_cigarmath__bam2csv / 'test_output/test_output.csv'
     params:
-        fields = ["query_name", "reference_name", "reference_start", "query_sequence", "NM"]
+        fields = ["query_name", "reference_start", "CR", "OX"]
     wrapper:
         f"file:{TEST_ROOT_cigarmath__bam2csv.parent}"
 
 
 rule:
     input:
-        TEST_ROOT_cigarmath__bam2csv / '../../test_data/test.sam'
+        TEST_ROOT_cigarmath__bam2csv / 'testreads.sam'
     output:
         temp(TEST_ROOT_cigarmath__bam2csv / 'test_output/test.bam')
-    params:
-        extra = '-n'
     wrapper:
-        f"{WRAPPER_VERSION}/bio/samtools/sort" 
+        f"{WRAPPER_VERSION}/bio/samtools/view" 
