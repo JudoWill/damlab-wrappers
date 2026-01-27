@@ -1,0 +1,20 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+description: Describes the properties of an individual nanopore sample
+required:
+  - sample_name
+  - barcode
+  - PCR_library
+  
+properties:
+    sample_name:
+        description: 'A unique sample name. No spaces, dots, dashes or special characters. Only letters, numbers, and underscores.'
+    barcode:
+        type: string
+        description: 'The barcode in "barcodeXX" format.'
+    PCR_library:
+        type: string
+        description: 'A unique code for the PCR of this sample. Usually date.initial ie 20241230.WND'
+    description:
+        type: string
+        description: 'A free-text description of the sample'
+
