@@ -1,8 +1,0 @@
-# Slice metrics
-append_region_to_read_id: false
-region: HXB2:110-130
-region_name: test_region
-sample_name: test_sample
-segments_overlapping_region: 4
-total_segments_processed: 6
-used_index: false

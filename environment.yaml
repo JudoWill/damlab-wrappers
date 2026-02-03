@@ -2,6 +2,10 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - snakemake
+  - snakemake>=9
   - pytest
+  - python>=3.12
   - conda
+  - pip
+  - pip:
+    - snakemake-executor-plugin-slurm

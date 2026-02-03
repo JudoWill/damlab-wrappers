@@ -4,7 +4,7 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2024"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.1.0"
+__version__ = "1.1.2"
 
 import pandas as pd
 import yaml
@@ -14,10 +14,11 @@ from pathlib import Path
 
 # Configure logging to use Snakemake's log file
 if "snakemake" in locals():
+    filename = snakemake.log[0] if hasattr(snakemake, 'log') and snakemake.log else None
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        filename=snakemake.log[0] if hasattr(snakemake, 'log') else None
+        filename=filename
     )
 else:
     logging.basicConfig(
@@ -87,6 +88,13 @@ def merge_csv_files(input_files: List[str],
         # If on is a string or list of strings, use the same for all merges
         merge_keys = [on] * len(input_files)
     
+    # Track the original key column names
+    original_keys = []
+    if isinstance(on, str):
+        original_keys = [on] * len(input_files)
+    elif isinstance(on, list) and on and isinstance(on[0], list):
+        original_keys = [keys[0] if isinstance(keys, list) and len(keys) == 1 else None for keys in on]
+    
     # Iteratively merge remaining files
     for i, file in enumerate(input_files[1:], 1):
         df = pd.read_csv(file)
@@ -103,6 +111,8 @@ def merge_csv_files(input_files: List[str],
                 left_on = left_key[0]
                 right_on = right_key[0]
                 logger.info(f"Using left_on={left_on}, right_on={right_on} for merge")
+                
+                # Perform the merge
                 result = result.merge(
                     df,
                     left_on=left_on,
@@ -110,6 +120,20 @@ def merge_csv_files(input_files: List[str],
                     how=how,
                     suffixes=(suffixes[i-1], suffixes[i])
                 )
+                
+                # Handle key column renaming
+                if original_keys[i-1] == original_keys[i]:
+                    # If both keys are the same, rename suffixed columns back to original
+                    if f"{original_keys[i-1]}{suffixes[i-1]}" in result.columns:
+                        result = result.rename(columns={f"{original_keys[i-1]}{suffixes[i-1]}": original_keys[i-1]})
+                    if f"{original_keys[i]}{suffixes[i]}" in result.columns:
+                        result = result.rename(columns={f"{original_keys[i]}{suffixes[i]}": original_keys[i]})
+                else:
+                    # If keys are different, keep both original names
+                    if f"{left_on}{suffixes[i-1]}" in result.columns:
+                        result = result.rename(columns={f"{left_on}{suffixes[i-1]}": left_on})
+                    if f"{right_on}{suffixes[i]}" in result.columns:
+                        result = result.rename(columns={f"{right_on}{suffixes[i]}": right_on})
             else:
                 # If we have multiple keys, use them as lists
                 logger.info(f"Using left_on={left_key}, right_on={right_key} for merge")

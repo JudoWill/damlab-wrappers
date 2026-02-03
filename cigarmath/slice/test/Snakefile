@@ -1,16 +1,23 @@
-rule all:
-    input:
-        'test_output.fastq',
-        'test_metrics.yaml'
-    conda: 'env.yaml'
-    shell: "pytest -xvs tests.py"
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__slice = Path(workflow.snakefile).parent
 
-rule test_slice:
+rule test_cigarmath__slice__all:
     input:
-        'test.bam'
+        files = [TEST_ROOT_cigarmath__slice/'test_output/test_output.fastq',
+                TEST_ROOT_cigarmath__slice/'test_output/test_metrics.yaml'],
+        tests = [TEST_ROOT_cigarmath__slice/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__slice/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__slice/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__slice} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__slice:
+    input:
+        TEST_ROOT_cigarmath__slice / 'test_output/test.bam'
     output:
-        fastq='test_output.fastq',
-        metrics='test_metrics.yaml'
+        fastq = TEST_ROOT_cigarmath__slice / 'test_output/test_output.fastq',
+        metrics = TEST_ROOT_cigarmath__slice / 'test_output/test_metrics.yaml'
     params:
         region='HXB2:110-130',
         region_name='test_region',
@@ -18,14 +25,14 @@ rule test_slice:
         min_mapq=20,
         append_region_to_read_id=False
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_cigarmath__slice.parent}"
 
-rule make_test_bam:
+rule:
     input:
-        'test.sam'
+        TEST_ROOT_cigarmath__slice / 'test.sam'
     output:
-        temp('test.bam')
+        temp(TEST_ROOT_cigarmath__slice / 'test_output/test.bam')
     params:
         extra = '-n'
     wrapper:
-        "v5.8.2/bio/samtools/sort" 
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 

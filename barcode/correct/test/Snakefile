@@ -1,18 +1,25 @@
-rule all:
-    input:
-        'test_output.bam'
-    conda: 'env.yaml'
-    shell: "pytest tests.py"
+# Get the directory of the current Snakefile
+TEST_ROOT_barcode__correct = Path(workflow.snakefile).parent
 
-rule test_correct_barcodes:
+rule test_barcode__correct__all:
     input:
-        'test.bam'
+        files = [TEST_ROOT_barcode__correct/'test_output/test_output.bam'],
+        tests = [TEST_ROOT_barcode__correct/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_barcode__correct/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_barcode__correct/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_barcode__correct} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_barcode__correct__correct_barcodes:
+    input:
+        TEST_ROOT_barcode__extract/'test_output/test_output.bam'
     output:
-        'test_output.bam'
+        TEST_ROOT_barcode__correct/'test_output/test_output.bam'
     params:
         in_tag='CR',
         out_tag='CB',
         barcode_length=34,
         mismatches=3
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_barcode__correct.parent}"

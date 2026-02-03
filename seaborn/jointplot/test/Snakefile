@@ -1,0 +1,116 @@
+import pandas as pd
+import numpy as np
+
+
+
+# Generate test data
+def generate_test_data():
+    # Create a DataFrame with some random data and NA values
+    np.random.seed(42)
+    n = 1000
+    
+    # Create three groups of data
+    group1 = pd.DataFrame({
+        'x': np.random.normal(0, 1, n),
+        'y': np.random.normal(0, 1, n),
+        'group': 'A'
+    })
+    
+    group2 = pd.DataFrame({
+        'x': np.random.normal(2, 1, n),
+        'y': np.random.normal(2, 1, n),
+        'group': 'B'
+    })
+    
+    group3 = pd.DataFrame({
+        'x': np.random.normal(-2, 1, n),
+        'y': np.random.normal(-2, 1, n),
+        'group': 'C'
+    })
+    
+    # Combine the groups
+    df = pd.concat([group1, group2, group3], ignore_index=True)
+    
+    # Add some NA values
+    df.loc[df.sample(frac=0.1).index, 'x'] = np.nan
+    df.loc[df.sample(frac=0.1).index, 'y'] = np.nan
+    
+    # Save to CSV
+    df.to_csv("test_data/test_data.csv", index=False)
+
+
+# Test cases
+rule all:
+    input:
+        "test_data/basic_jointplot.png",
+        "test_data/kde_jointplot.png",
+        "test_data/na_handling_jointplot.png",
+        "test_data/basic_jointplot_metrics.yaml",
+        "test_data/kde_jointplot_metrics.yaml",
+        "test_data/na_handling_jointplot_metrics.yaml"
+
+rule make_test_data:
+    output:
+        "test_data/test_data.csv"
+    run:
+        generate_test_data()
+
+
+# Basic jointplot test
+rule test_basic_jointplot:
+    input:
+        "test_data/test_data.csv"
+    output:
+        "test_data/basic_jointplot.png",
+        metrics="test_data/basic_jointplot_metrics.yaml"
+    params:
+        x="x",
+        y="y",
+        joint_kwargs={
+            "kind": "scatter",
+            "alpha": 0.5
+        }
+    wrapper:
+        "file:../"
+
+# Jointplot with KDE marginals test
+rule test_kde_jointplot:
+    input:
+        "test_data/test_data.csv"
+    output:
+        "test_data/kde_jointplot.png",
+        metrics="test_data/kde_jointplot_metrics.yaml"
+    params:
+        x="x",
+        y="y",
+        joint_kwargs={
+            "kind": "kde",
+            "hue": "group"
+        },
+        marginal_kwargs={
+            "func": "kde",
+            "fill": True,
+            "alpha": 0.5
+        }
+    wrapper:
+        "file:../"
+
+# Jointplot with NA handling test
+rule test_na_handling_jointplot:
+    input:
+        "test_data/test_data.csv"
+    output:
+        "test_data/na_handling_jointplot.png",
+        metrics="test_data/na_handling_jointplot_metrics.yaml"
+    params:
+        x="x",
+        y="y",
+        joint_kwargs={
+            "kind": "scatter",
+            "hue": "group"
+        },
+        fillna={
+            "value": 0,
+        }
+    wrapper:
+        "file:../" 

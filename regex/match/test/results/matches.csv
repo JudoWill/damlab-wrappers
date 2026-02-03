@@ -1,0 +1,5 @@
+read_name,start_pattern,end_pattern
+seq1,ATGCCCTAG,GATCCCCCTAG
+seq2,ATGCCCTAG,
+seq3,,GATCCCCCTAG
+seq4,,

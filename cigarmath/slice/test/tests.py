@@ -6,12 +6,12 @@ import yaml
 
 def test_output_exists():
     """Test that output files were created"""
-    assert os.path.exists('test_output.fastq')
-    assert os.path.exists('test_metrics.yaml')
+    assert os.path.exists('test_output/test_output.fastq')
+    assert os.path.exists('test_output/test_metrics.yaml')
 
 def test_output_fastq_format():
     """Test that output FASTQ has correct format"""
-    with open('test_output.fastq') as f:
+    with open('test_output/test_output.fastq') as f:
         lines = f.readlines()
         
     # Check if file is not empty
@@ -21,7 +21,7 @@ def test_output_fastq_format():
     assert len(lines) % 4 == 0
     
     # Check if append_region_to_read_id is True in metrics
-    with open('test_metrics.yaml') as f:
+    with open('test_output/test_metrics.yaml') as f:
         metrics = yaml.safe_load(f)
     append_region = metrics.get('append_region_to_read_id', False)
     
@@ -43,7 +43,7 @@ def test_output_fastq_format():
 
 def test_metrics_yaml():
     """Test that metrics YAML contains expected fields"""
-    with open('test_metrics.yaml') as f:
+    with open('test_output/test_metrics.yaml') as f:
         metrics = yaml.safe_load(f)
     
     # Check required fields
@@ -64,7 +64,7 @@ def test_metrics_yaml():
 
 def test_read_content():
     """Test that extracted reads contain expected content"""
-    with open('test_output.fastq') as f:
+    with open('test_output/test_output.fastq') as f:
         content = f.read()
     
     # Check for presence of specific sequences from overlapping reads
@@ -72,7 +72,7 @@ def test_read_content():
     assert 'TACGTAC' in content     # Part of read4
     
     # Make sure we don't have reads outside the region
-    with open('test_metrics.yaml') as f:
+    with open('test_output/test_metrics.yaml') as f:
         metrics = yaml.safe_load(f)
     
     # We requested region 110-130, so read6 (position 200) shouldn't be included

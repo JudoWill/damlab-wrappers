@@ -1,17 +1,28 @@
-rule all:
-    input:
-        'test_output.bam'
-    conda: 'env.yaml'
-    shell: "pytest tests.py"
+# Get the directory of the current Snakefile
+TEST_ROOT_barcode__extract = Path(workflow.snakefile).parent
 
-rule test_extract_barcodes:
+rule test_barcode__extract__all:
     input:
-        'test.bam'
+        files = [TEST_ROOT_barcode__extract/'test_output/test_output.bam',
+                 TEST_ROOT_barcode__extract/'test_output/test_metrics.yaml',
+                 ],
+        tests = [TEST_ROOT_barcode__extract/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_barcode__extract/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_barcode__extract/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_barcode__extract} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_barcode__extract__extract_barcodes:
+    input:
+        TEST_ROOT_barcode__extract/'../../valid.bam'
     output:
-        'test_output.bam'
+        TEST_ROOT_barcode__extract/'test_output/test_output.bam',
+        metrics=TEST_ROOT_barcode__extract/'test_output/test_metrics.yaml'
     params:
-        builtin='SIVmac239m2',
+        builtin='SIVNFL,SIVmac239m2',
         barcode_tag='CR',
-        umi_tag='OX'
+        umi_tag='OX',
+        sample_name = 'sample_name'
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_barcode__extract.parent}"

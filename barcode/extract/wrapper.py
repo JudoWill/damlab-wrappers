@@ -4,7 +4,7 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2024"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import pysam
 import regex
@@ -14,22 +14,58 @@ import yaml
 if "snakemake" not in locals():
     import snakemake # type: ignore
 
+
+def _build_siv_barcode(strain, i, d, s):
+
+    left = 'cctcctccccctccaggactagcataa'
+    right = 'atggaagaaagacctccagaaaatga'
+    # Taken from https://journals.asm.org/doi/full/10.1128/jvi.01420-19
+    # Figure 5
+    if strain == 'SIVmac239M':
+        inner_left =  'ACGCGGGCTACC'
+        inner_right = 'TTGCAAGCGCGT'
+    elif strain == 'SIVmac239m2':
+        inner_left =  'ACGCGAGCCATG'
+        inner_right = 'CGATGCGCGCGT'
+    elif strain == 'SIVmac239Opt5M':
+        inner_left =  'ACGCGGACGGCA'
+        inner_right = 'AGCGTGCCGCGT'
+    elif strain == 'bSHIV1054M':
+        inner_left =  'ACGCGGGCTACC'
+        inner_right = 'GTGCAAGCGCGT'
+    elif strain == 'bSHIVAD8EOM':
+        inner_left =  'ACGCGCAGCGTA'
+        inner_right = 'CAGCTAGCGCGT'
+    elif strain == 'cSHIV174M':
+        inner_left =  'ACCGGACAGCGT'
+        inner_right = 'AGCTGACCCGGT'
+    elif strain == 'cSHIV224M':
+        inner_left =  'ACCGGACAGCGT'
+        inner_right = 'CACAAGTCCGGT'
+    else:
+        raise ValueError(f"Unknown strain: {strain}")
+
+    return {'barcode_primer': f'({left}{inner_left}){{i<={i},d<={d},s<={s}}}(?<umi>.{{10}})({inner_right}{right}){{i<={i},d<={d},s<={s}}}'}
+
 # Built-in regex patterns
 BUILTIN_PATTERNS = {
-    'SIVmac239m2': {
+    'SIVNFL': {
         'left_primer': '(CAAGCAGAAGACGGCATACGAGAT){i<=2,d<=2,s<=4}(?<umi>.{18})(atatacttagaaaaggaagaaggcatcataccaga){i<=2,d<=2,s<=4}',
         'right_primer': '(gaagaactccgaaaaaggctaaggc){i<=2,d<=2,s<=4}(?<umi>.{18})(GATCTCGGTGGTCGCCGTATCATT){i<=2,d<=2,s<=4}',
-        'barcode_primer': '(cctcctccccctccaggactagcataa){i<=2,d<=2,s<=4}(?<umi>.{34})(atggaagaaagacctccagaaaatga){i<=2,d<=2,s<=4}'
     }
 }
 
+
 def get_regex_patterns(params):
     """Get regex patterns from either builtin or custom parameters"""
-    print(params)
+    
     if 'builtin' in params:
-        if params['builtin'] not in BUILTIN_PATTERNS:
-            raise ValueError(f"Unknown builtin pattern: {params['builtin']}. Available patterns: {list(BUILTIN_PATTERNS.keys())}")
-        patterns = BUILTIN_PATTERNS[params['builtin']]
+        patterns = {}
+        for pattern in params['builtin'].split(','):
+            if pattern not in BUILTIN_PATTERNS:
+                patterns.update(_build_siv_barcode(pattern, 2, 2, 4))
+            else:
+                patterns.update(BUILTIN_PATTERNS[pattern])
     else:
         required = ['left_primer', 'right_primer', 'barcode_primer']
         missing = [p for p in required if p not in params]
@@ -147,7 +183,7 @@ with open(bam_in_path, mode='rb') as handle:
                 has_right = False
                 
                 # Extract barcode
-                barcode = extract_umi(patterns['BARCODE_PRIMER'], read.query_sequence, default='N'*34)
+                barcode = extract_umi(patterns['BARCODE_PRIMER'], read.query_sequence, default='N'*10)
                 if not all(b == 'N' for b in barcode):
                     reads_processed['barcode'] += 1
                     has_barcode = True

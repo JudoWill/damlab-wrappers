@@ -1,20 +1,24 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_msa__muscle = Path(workflow.snakefile).parent
 
-wd = workflow.basedir
 
-rule all:
+rule test_msa__muscle__all:
     input:
-        'test.fasta'
+        files = [TEST_ROOT_msa__muscle/'test_output/test.fasta'],
+        tests = [TEST_ROOT_msa__muscle/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_msa__muscle/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_msa__muscle/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_msa__muscle} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_muscle:
+rule test_msa__muscle:
     input:
-        sequences = 'sequences.fasta'
+        sequences = TEST_ROOT_msa__muscle/'sequences.fasta'
     output:
-        temp('test.fasta')
+        temp(TEST_ROOT_msa__muscle/'test_output/test.fasta')
     log:
-        temp('test.log')
+        temp(TEST_ROOT_msa__muscle/'test_output/test.log')
     threads: 2
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_msa__muscle.parent}"

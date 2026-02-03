@@ -1,0 +1,11 @@
+name: regex-match
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - regex
+  - pandas
+  - biopython
+  - pyyaml 

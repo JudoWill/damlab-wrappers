@@ -121,4 +121,40 @@ def test_three_file_different_columns_merge():
     sample_row = df[df['employee_id'] == 1].iloc[0]
     assert sample_row['name'] == 'John', "Name mismatch in merged data"
     assert sample_row['salary'] == 75000, "Salary mismatch in merged data"
-    assert sample_row['position'] == 'Senior Engineer', "Position mismatch in merged data" 
+    assert sample_row['position'] == 'Senior Engineer', "Position mismatch in merged data"
+
+def test_three_file_same_key_merge():
+    """Test merging three files where the middle table has a different key name"""
+    df = pd.read_csv('test_output/three_file_same_key_merge.csv')
+    print(df)
+    assert len(df) > 0, "Three file same key merge produced empty dataframe"
+    
+    # Check that the key columns are preserved
+    assert 'key' in df.columns, "Key column not found in output"
+    assert 'key2' in df.columns, "Key2 column not found in output"
+    
+    # Check that all value columns are present
+    assert 'value1' in df.columns, "value1 column not found"
+    assert 'value2' in df.columns, "value2 column not found"
+    assert 'value3' in df.columns, "value3 column not found"
+    
+    # Check that we have the expected number of rows
+    assert len(df) == 3, "Expected 3 rows in output"
+    
+    # Check the values directly
+    expected_data = [
+        {'key': 1, 'key2': 1, 'value1': 'A', 'value2': 'X', 'value3': 'M'},
+        {'key': 2, 'key2': 2, 'value1': 'B', 'value2': 'Y', 'value3': 'N'},
+        {'key': 3, 'key2': 3, 'value1': 'C', 'value2': 'Z', 'value3': 'O'}
+    ]
+    
+    for expected_row in expected_data:
+        actual_row = df[df['key'] == expected_row['key']].iloc[0]
+        for col, expected_value in expected_row.items():
+            actual_value = actual_row[col]
+            if isinstance(expected_value, int):
+                # For integer keys, compare as integers
+                assert int(actual_value) == expected_value, f"Value mismatch for {col}: expected {expected_value}, got {actual_value}"
+            else:
+                # For string values, compare as strings
+                assert str(actual_value).strip() == expected_value, f"Value mismatch for {col}: expected '{expected_value}', got '{actual_value}'" 

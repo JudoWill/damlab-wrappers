@@ -1,30 +1,38 @@
-rule all:
-    input:
-        'test_output.yaml',
-        'test_read_level.csv'
-    conda: 'env.yaml'
-    shell: "pytest tests.py"
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__DF = Path(workflow.snakefile).parent
 
-rule test_deletion_frequency:
+
+rule test_cigarmath__DF__all:
     input:
-        'test.bam'
+        files = [TEST_ROOT_cigarmath__DF/'test_output/test_output.yaml',
+                TEST_ROOT_cigarmath__DF/'test_output/test_read_level.csv',],
+        tests = [TEST_ROOT_cigarmath__DF/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__DF/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__DF/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__DF} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__DF__deletion_frequency:
+    input:
+        TEST_ROOT_cigarmath__DF/'test_output/test.bam'
     output:
-        'test_output.yaml',
-        'test_read_level.csv'
+        TEST_ROOT_cigarmath__DF/'test_output/test_output.yaml',
+        TEST_ROOT_cigarmath__DF/'test_output/test_read_level.csv'
     params:
         required_region = "HXB2F:1000-7000",
         deletion_region = "HXB2F:2100-2150",
         sample_name = 'test'
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_cigarmath__DF.parent}"
 
 
 rule:
     input:
-        '../../test_data/test.sam'
+        TEST_ROOT_cigarmath__DF / '../../test_data/test.sam'
     output:
-        temp('test.bam')
+        temp(TEST_ROOT_cigarmath__DF / 'test_output/test.bam')
     params:
         extra = '-n'
     wrapper:
-        "v5.8.2/bio/samtools/sort"
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 

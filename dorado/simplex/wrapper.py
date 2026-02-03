@@ -42,8 +42,6 @@ if 'gpu' in snakemake.params.keys():
     else:
         gpu_arg = f"--device cuda:{gpu}"
 
-# Get number of threads
-threads_arg = f"--threads {snakemake.threads}" if snakemake.threads > 1 else ""
 
 # Handle logging
 log = snakemake.log_fmt_shell(stdout=False, stderr=True)
@@ -52,7 +50,6 @@ log = snakemake.log_fmt_shell(stdout=False, stderr=True)
 shell(
     f"{dorado_path} basecaller"
     f" {gpu_arg}"
-    f" {threads_arg}"
     f" {models_dir_arg}"
     f" {reference_arg}"
     f" {recursive_arg}"

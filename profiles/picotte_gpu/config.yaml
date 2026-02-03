@@ -1,11 +1,12 @@
 use-conda: true
+conda-prefix: /ifs/groups/wndGrp/conda_prefix
 executor: slurm
-jobs: 5
-conda-prefix: '../../.snakemake/conda'
+jobs: 20
+latency-wait: 20
 cores: 1
 forceall: true
 config:
-  DORADO_MODELS_DIR: /home/wnd22/dorado_models
+  DORADO_MODELS_DIR: /ifs/groups/wndGrp/dorado_models
 default-resources:
   slurm_account: wndprj
   slurm_partition: 'gpu'

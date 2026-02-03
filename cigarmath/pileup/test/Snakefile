@@ -1,25 +1,34 @@
-rule all:
-    input:
-        'test_output.tsv'
-    conda: 'env.yaml'
-    shell: "pytest tests.py"
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__pileup = Path(workflow.snakefile).parent
 
-rule test_pileup:
+
+rule test_cigarmath__pileup__all:
     input:
-        'test.bam'
+        files = [TEST_ROOT_cigarmath__pileup/'test_output/test_output.tsv'],
+        tests = [TEST_ROOT_cigarmath__pileup/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__pileup/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__pileup/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__pileup} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__pileup:
+    input:
+        TEST_ROOT_cigarmath__pileup / 'test_output/test.bam'
     output:
-        'test_output.tsv'
+        TEST_ROOT_cigarmath__pileup / 'test_output/test_output.tsv'
     params:
         min_mapq = 20
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_cigarmath__pileup.parent}"
 
-rule make_test_bam:
+
+rule:
     input:
-        '../../test_data/test.sam'
+        TEST_ROOT_cigarmath__pileup / '../../test_data/test.sam'
     output:
-        temp('test.bam')
+        temp(TEST_ROOT_cigarmath__pileup / 'test_output/test.bam')
     params:
         extra = '-n'
     wrapper:
-        "v5.8.2/bio/samtools/sort" 
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 

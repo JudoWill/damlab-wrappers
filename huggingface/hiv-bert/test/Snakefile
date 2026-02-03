@@ -1,88 +1,94 @@
-from os.path import join
-
-wd = workflow.basedir
-build_dir = join(wd, ".build")
-
-# Create build directory if it doesn't exist
-import os
-os.makedirs(build_dir, exist_ok=True)
+# Get the directory of the current Snakefile
+TEST_ROOT_huggingface_hivbert = Path(workflow.snakefile).parent
 
 # Get custom environment from config if available
 custom_env = config.get('hiv_bert_env', None)
+HUGGINGFACE_MODEL_CACHE = config.get('HUGGINGFACE_MODEL_CACHE', TEST_ROOT_huggingface_hivbert/'test_output/model_cache')
 
-rule all:
+rule test_huggingface__hivbert__all:
     input:
-        join(build_dir, 'aa_v3_results.csv'),
-        join(build_dir, 'dna_v3_results.csv'),
-        join(build_dir, 'protein_results.csv'),
-        join(build_dir, 'edge_case_results.csv')
+        files = [TEST_ROOT_huggingface_hivbert/'test_output/aa_v3_results.csv',
+                TEST_ROOT_huggingface_hivbert/'test_output/dna_v3_results.csv',
+                TEST_ROOT_huggingface_hivbert/'test_output/protein_results.csv',
+                TEST_ROOT_huggingface_hivbert/'test_output/edge_case_results.csv'],
+        tests = [TEST_ROOT_huggingface_hivbert/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_huggingface_hivbert/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_huggingface_hivbert/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_huggingface_hivbert} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_aa_v3:
+rule test_huggingface__hivbert__aa_v3:
     input:
-        'test_aa_v3.fasta'
+        TEST_ROOT_huggingface_hivbert/'test_aa_v3.fasta'
     output:
-        results = join(build_dir, 'aa_v3_results.csv'),
-        metrics = join(build_dir, 'aa_v3_metrics.yaml')
+        results = TEST_ROOT_huggingface_hivbert/ 'test_output/aa_v3_results.csv',
+        metrics = TEST_ROOT_huggingface_hivbert/ 'test_output/aa_v3_metrics.yaml'
     params:
         model_name = 'damlab/HIV_V3_bodysite',
-        model_directory = join(build_dir, 'model_cache'),
+        model_directory = HUGGINGFACE_MODEL_CACHE,
         min_length = 10,
         max_length = 256,
         sample_name = 'V3_Test_Sample',
         custom_env = custom_env
+    resources:
+        gpu=1
     log:
-        stdout = join(build_dir, 'logs/aa_v3.log')
-    conda:
-        'env.yaml'
+        stdout = TEST_ROOT_huggingface_hivbert/ 'test_output/aa_v3.log'
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_huggingface_hivbert.parent}"
 
-rule test_dna_v3:
+rule test_huggingface__hivbert__dna_v3:
     input:
-        'test_dna_v3.fasta'
+        TEST_ROOT_huggingface_hivbert/ 'test_dna_v3.fasta'
     output:
-        join(build_dir, 'dna_v3_results.csv')
+        TEST_ROOT_huggingface_hivbert/ 'test_output/dna_v3_results.csv'
     params:
         model_name = 'damlab/HIV_V3_bodysite',
-        model_directory = join(build_dir, 'model_cache'),
+        model_directory = HUGGINGFACE_MODEL_CACHE,
         min_length = 10,
         max_length = 256,
         custom_env = custom_env
+    resources:
+        gpu=1
     log:
-        stdout = join(build_dir, 'logs/dna_v3.log')
+        stdout = TEST_ROOT_huggingface_hivbert/ 'test_output/dna_v3.log'
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_huggingface_hivbert.parent}"
 
-rule test_proteins:
+rule test_huggingface__hivbert__proteins:
     input:
-        'test_aa_proteins.fasta'
+        TEST_ROOT_huggingface_hivbert/ 'test_aa_proteins.fasta'
     output:
-        join(build_dir, 'protein_results.csv')
+        TEST_ROOT_huggingface_hivbert/ 'test_output/protein_results.csv'
     params:
         model_name = 'damlab/hiv_bert',
-        model_directory = join(build_dir, 'model_cache'),
+        model_directory = HUGGINGFACE_MODEL_CACHE,
         min_length = 10,
         max_length = 256,
         custom_env = custom_env
+    resources:
+        gpu=1
     log:
-        stdout = join(build_dir, 'logs/proteins.log')
+        stdout = TEST_ROOT_huggingface_hivbert/ 'test_output/proteins.log'
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_huggingface_hivbert.parent}"
 
-rule test_edge_cases:
+rule test_huggingface__hivbert__edge_cases:
     input:
-        'test_edge_cases.fasta'
+        TEST_ROOT_huggingface_hivbert/ 'test_edge_cases.fasta'
     output:
-        join(build_dir, 'edge_case_results.csv')
+        TEST_ROOT_huggingface_hivbert/ 'test_output/edge_case_results.csv'
     params:
         model_name = 'damlab/HIV_V3_bodysite',
-        model_directory = join(build_dir, 'model_cache'),
+        model_directory = HUGGINGFACE_MODEL_CACHE,
         min_length = 10,
         max_length = 256,
         custom_env = custom_env
+    resources:
+        gpu=1
     log:
-        stderr = join(build_dir, 'logs/edge_cases.log')
+        stderr = TEST_ROOT_huggingface_hivbert/ 'test_output/edge_cases.log'
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_huggingface_hivbert.parent}"
+    

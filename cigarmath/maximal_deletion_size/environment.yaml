@@ -1,0 +1,11 @@
+name: cigarmath-maximal-deletion-size
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - pysam
+  - pyyaml
+  - pip
+  - pip:
+    - git+https://github.com/DamLabResources/cigarmath.git@main

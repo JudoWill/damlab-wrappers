@@ -1,0 +1,9 @@
+name: seaborn-plot-wrapper
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - seaborn
+  - matplotlib
+  - pyyaml 

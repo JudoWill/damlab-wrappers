@@ -1,52 +1,62 @@
-from os.path import join
+from pathlib import Path
 
-# Create test output directory
-import os
-os.makedirs("test_output", exist_ok=True)
+# Get the directory of the current Snakefile
+TEST_ROOT_example__shell = Path(workflow.snakefile).parent
 
-rule all:
+# Use {group}__{tool}__ as a prefix to keep rules distinct
+# Place output & log files in test_ directories to ensure they're not added to git
+
+# One rule to collect all test files
+rule test_example__shell__all:
     input:
-        "test_output/basic.fasta",
-        "test_output/frame1.fasta",
-        "test_output/table2.fasta"
+        files = [TEST_ROOT_example__shell/"test_output/basic.fasta",
+                TEST_ROOT_example__shell/"test_output/frame2.fasta",
+                TEST_ROOT_example__shell/"test_output/table2.fasta"],
+        tests = [TEST_ROOT_example__shell/"tests.py"]
     conda: "env.yaml"
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_example__shell/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_example__shell/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_example__shell} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
 # Test with basic parameters
-rule test_basic:
+rule example__shell__test_basic:
     input:
-        "test_data.fasta"
+        TEST_ROOT_example__shell/"test_data.fasta"
     output:
-        "test_output/basic.fasta"
-    params:
-        frame=0,
-        table=1,
-        trim=False
-    wrapper:
-        "file:../"
-
-# Test with frame 1
-rule test_frame1:
-    input:
-        "test_data.fasta"
-    output:
-        "test_output/frame1.fasta"
+        TEST_ROOT_example__shell/"test_output/basic.fasta"
+    log: TEST_ROOT_example__shell/"test_output/basic.log"
     params:
         frame=1,
         table=1,
         trim=False
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_example__shell.parent}"
+
+# Test with frame 2
+rule example__shell__test_frame2:
+    input:
+        TEST_ROOT_example__shell/"test_data.fasta"
+    output:
+        TEST_ROOT_example__shell/"test_output/frame2.fasta"
+    log: TEST_ROOT_example__shell/"test_output/frame2.log"
+    params:
+        frame=2,
+        table=1,
+        trim=False
+    wrapper:
+        f"file:{TEST_ROOT_example__shell.parent}"
 
 # Test with table 2 (vertebrate mitochondrial)
-rule test_table2:
+rule example__shell__test_table2:
     input:
-        "test_data.fasta"
+        TEST_ROOT_example__shell/"test_data.fasta"
     output:
-        "test_output/table2.fasta"
+        TEST_ROOT_example__shell/"test_output/table2.fasta"
+    log: TEST_ROOT_example__shell/"test_output/table2.log"
     params:
-        frame=0,
+        frame=1,
         table=2,
         trim=False
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_example__shell.parent}"

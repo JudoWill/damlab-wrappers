@@ -1,0 +1,21 @@
+rule all:
+    input:
+        "results/matches.csv",
+        "results/metrics.yaml"
+    conda: 'env.yaml'
+    shell:
+        'pytest tests.py'
+
+rule test_regex_match:
+    input:
+        fasta="test.fasta"
+    output:
+        csv="results/matches.csv",
+        metrics="results/metrics.yaml"
+    params:
+        patterns=lambda wildcards: {
+            'start_pattern': r"ATGCCCTAG",  # Pattern 1: Exact match for seq1 and seq2
+            'end_pattern': r"GATCCCCCTAG"   # Pattern 2: Exact match for seq1 and seq3
+        }
+    wrapper:
+        "file:../" 

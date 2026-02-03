@@ -1,86 +1,112 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_pandas__merge = Path(workflow.snakefile).parent
 
-# Create test output directory
-import os
-os.makedirs("test_output", exist_ok=True)
-
-rule all:
+rule test_pandas__merge__all:
     input:
-        "test_output/inner_merge.csv",
-        "test_output/outer_merge.csv",
-        "test_output/no_on_merge.csv",
-        "test_output/three_file_merge.csv",
-        "test_output/different_columns_merge.csv",
-        "test_output/three_file_different_columns_merge.csv"
-    conda: "env.yaml"
-    shell: "pytest tests.py"
+        files = [
+        TEST_ROOT_pandas__merge/'test_output/inner_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/outer_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/no_on_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/three_file_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/different_columns_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/three_file_different_columns_merge.csv',
+        TEST_ROOT_pandas__merge/'test_output/three_file_same_key_merge.csv'],
+        tests = [TEST_ROOT_pandas__merge/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_pandas__merge/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_pandas__merge/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_pandas__merge} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
 # Test with inner merge
-rule test_inner_merge:
+rule test_pandas__merge__inner_merge:
     input:
-        csv_files=["test_data1.csv", "test_data2.csv"]
+        csv_files=[
+            TEST_ROOT_pandas__merge/"test_data1.csv",
+            TEST_ROOT_pandas__merge/"test_data2.csv"
+            ]
     output:
-        "test_output/inner_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/inner_merge.csv"
     params:
         on="id",
         how="inner"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
 
 # Test with outer merge
-rule test_outer_merge:
+rule test_pandas__merge__outer_merge:
     input:
-        csv_files=["test_data1.csv", "test_data2.csv"]
+        csv_files=[TEST_ROOT_pandas__merge/"test_data1.csv",
+        TEST_ROOT_pandas__merge/"test_data2.csv"]
     output:
-        "test_output/outer_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/outer_merge.csv"
     params:
         on="id",
         how="outer"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
 
 # Test without specifying 'on' parameter
-rule test_no_on_merge:
+rule test_pandas__merge__no_on_merge:
     input:
-        csv_files=["test_data1.csv", "test_data2.csv"]
+        csv_files=[TEST_ROOT_pandas__merge/"test_data1.csv", 
+        TEST_ROOT_pandas__merge/"test_data2.csv"]
     output:
-        "test_output/no_on_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/no_on_merge.csv"
     params:
         how="outer"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
 
 # Test with three files and suffixes
-rule test_three_file_merge:
+rule test_pandas__merge__three_file_merge:
     input:
-        csv_files=["test_data1.csv", "test_data2.csv", "test_data3.csv"]
+        csv_files=[TEST_ROOT_pandas__merge/"test_data1.csv",
+        TEST_ROOT_pandas__merge/"test_data2.csv",
+        TEST_ROOT_pandas__merge/"test_data3.csv"]
     output:
-        "test_output/three_file_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/three_file_merge.csv"
     params:
         on="id",
         how="outer",
         suffixes=("_first", "_second", "_third")
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
 
-rule different_columns_merge:
+rule test_pandas__merge__different_columns_merge:
     input:
-        csv_files=["test_data4.csv", "test_data5.csv"]
+        csv_files=[TEST_ROOT_pandas__merge/"test_data4.csv",
+        TEST_ROOT_pandas__merge/"test_data5.csv"]
     output:
-        "test_output/different_columns_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/different_columns_merge.csv"
     params:
         on=[["employee_id"], ["staff_id"]],
         how="outer"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
 
-rule three_file_different_columns_merge:
+rule test_pandas__merge__three_file_different_columns_merge:
     input:
-        csv_files=["test_data4.csv", "test_data5.csv", "test_data6.csv"]
+        csv_files=[TEST_ROOT_pandas__merge/"test_data4.csv",
+        TEST_ROOT_pandas__merge/"test_data5.csv",
+        TEST_ROOT_pandas__merge/"test_data6.csv"]
     output:
-        "test_output/three_file_different_columns_merge.csv"
+        TEST_ROOT_pandas__merge/"test_output/three_file_different_columns_merge.csv"
     params:
         on=[["employee_id"], ["staff_id"], ["person_id"]],
         how="outer"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_pandas__merge.parent}"
+
+rule test_pandas__merge__three_file_same_key_merge:
+    input:
+        csv_files=[TEST_ROOT_pandas__merge/"test_data7.csv",
+        TEST_ROOT_pandas__merge/"test_data8.csv",
+        TEST_ROOT_pandas__merge/"test_data9.csv"]
+    output:
+        TEST_ROOT_pandas__merge/"test_output/three_file_same_key_merge.csv"
+    params:
+        on=[["key"], ["key2"], ["key"]],
+        how="outer"
+    wrapper:
+        f"file:{TEST_ROOT_pandas__merge.parent}"

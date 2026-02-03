@@ -11,12 +11,14 @@ This wrapper demonstrates how to create a Snakemake wrapper for a shell command.
 * FASTA file containing translated protein sequences
 
 ## Parameters
-* `frame` (optional, default: 0)
-    Reading frame for translation (0, 1, or 2)
-* `table` (optional, default: 1)
-    Translation table number (1-16)
+* `frame` (optional, default: 1)
+    Reading frame for translation (1, 2, 3, -1, -2, -3, or 6 for all six frames)
+* `min_len` (optional, default: None)
+    Minimum length of amino acid sequence
+* `transl_table` (optional, default: 1)
+    Translation table/genetic code number
 * `trim` (optional, default: false)
-    Whether to trim stop codons
+    Whether to remove all 'X' and '*' characters from the right end of the translation
 * `extra` (optional, default: "")
     Additional parameters to pass to seqkit translate
 
@@ -27,9 +29,11 @@ rule translate_sequences:
         "sequences.fasta"
     output:
         "proteins.fasta"
+    threads: 4
     params:
-        frame=0,
-        table=1,
+        frame=1,
+        min_len=100,
+        transl_table=1,
         trim=True,
         extra="--clean"
     wrapper:

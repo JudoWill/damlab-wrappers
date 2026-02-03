@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory(dir=snakemake.params.get("tempdir", None)) as t
     # Anything left in barcode_to_output is missing
     # Create empty files for them to keep snakemake happy
     for barcode, output_name in barcode_to_output.items():
-        target_file = os.path.join(output_dir, output_name)
+        target_file = os.path.join(output_dir, output_name) + extension
         if path.exists(target_file):
             os.remove(target_file)
         shell(f"touch {target_file}")

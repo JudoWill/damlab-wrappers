@@ -6,13 +6,12 @@ or protein sequences.
 """
 
 __author__ = "Will Dampier"
-__copyright__ = "Copyright 2024"
+__copyright__ = "Copyright 2025"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 import os
-from pathlib import Path
 from typing import Optional
 
 from snakemake.shell import shell  # type: ignore
@@ -69,4 +68,4 @@ if extra:
 log = snakemake.log_fmt_shell(stdout=False, stderr=True)
 
 # Execute FastTree
-shell("FastTree {' '.join(cmd_args)} > {output} {log}")
+shell(f"FastTree {' '.join(cmd_args)} > {output} {log}")

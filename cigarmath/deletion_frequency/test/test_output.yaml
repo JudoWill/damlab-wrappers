@@ -1,8 +1,0 @@
-# Cigarmath Deletion Frequency
-deletion_frequency: 0.8
-reads_covered_with_deletion: 24
-reads_covering_required: 30
-reads_with_deletion: 47
-region_name: region
-sample_name: test
-total_reads: 180

@@ -3,5 +3,5 @@ channels:
   - bioconda
 dependencies:
   - python>=3.10
-  - seqkit>=0.16.1
+  - seqkit>=2.10
   - snakemake-wrapper-utils>=0.3 

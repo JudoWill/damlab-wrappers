@@ -1,0 +1,138 @@
+# Test all plots
+rule all:
+    input:
+        "output/barplot.png",
+        "output/multiple_plots.png",
+        "output/histogram.png",
+        "output/boxplot.png" 
+
+# Create test data
+rule create_test_data:
+    output:
+        "data/test_data.csv"
+    shell:
+        """
+        echo "category,value,group
+        A,10,1
+        B,15,1
+        C,20,1
+        A,12,2
+        B,18,2
+        C,22,2
+        A,8,3
+        B,14,3
+        C,19,3" > {output}
+        """
+
+# Test basic barplot
+rule test_barplot:
+    input:
+        "data/test_data.csv"
+    output:
+        "output/barplot.png",
+        metrics="output/barplot_metrics.yaml"
+    params:
+        plot="barplot",
+        plot_kwargs={
+            "x": "category",
+            "y": "value",
+            "hue": "group"
+        },
+        fig_kwargs={
+            "figsize": (8, 6)
+        },
+        axis_kwargs={
+            "xlabel": "Category",
+            "ylabel": "Value",
+            "title": "Test Barplot"
+        }
+    wrapper:
+        "file:../"
+
+# Test multiple plots
+rule test_multiple_plots:
+    input:
+        "data/test_data.csv"
+    output:
+        "output/multiple_plots.png",
+        metrics="output/multiple_plots_metrics.yaml"
+    params:
+        plot=["scatterplot", "lineplot"],
+        plot_kwargs=[
+            {
+                "x": "category",
+                "y": "value",
+                "hue": "group",
+                "alpha": 0.5
+            },
+            {
+                "x": "category",
+                "y": "value",
+                "hue": "group",
+                "style": "group",
+                "markers": True
+            }
+        ],
+        fig_kwargs={
+            "figsize": (10, 8)
+        },
+        axis_kwargs={
+            "xlabel": "Category",
+            "ylabel": "Value",
+            "title": "Combined Scatter and Line Plot",
+            "despine": True,
+            "legend": {"title": "Groups", "loc": "upper right"}
+        }
+    wrapper:
+        "file:../"
+
+# Test histogram
+rule test_histogram:
+    input:
+        "data/test_data.csv"
+    output:
+        "output/histogram.png",
+        metrics="output/histogram_metrics.yaml"
+    params:
+        plot="histplot",
+        plot_kwargs={
+            "x": "value",
+            "hue": "group",
+            "multiple": "stack"
+        },
+        fig_kwargs={
+            "figsize": (8, 6)
+        },
+        axis_kwargs={
+            "xlabel": "Value",
+            "ylabel": "Count",
+            "title": "Value Distribution by Group"
+        }
+    wrapper:
+        "file:../"
+
+# Test boxplot
+rule test_boxplot:
+    input:
+        "data/test_data.csv"
+    output:
+        "output/boxplot.png",
+        metrics="output/boxplot_metrics.yaml"
+    params:
+        plot="boxplot",
+        plot_kwargs={
+            "x": "category",
+            "y": "value",
+            "hue": "group"
+        },
+        fig_kwargs={
+            "figsize": (8, 6)
+        },
+        axis_kwargs={
+            "xlabel": "Category",
+            "ylabel": "Value",
+            "title": "Value Distribution by Category and Group"
+        }
+    wrapper:
+        "file:../"
+

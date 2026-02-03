@@ -4,11 +4,11 @@ import pytest
 
 def test_output_exists():
     """Test that output BAM file was created"""
-    assert os.path.exists('test_output.bam')
+    assert os.path.exists('test_output/test_output.bam')
 
 def test_output_tags():
     """Test that output BAM has correct tags"""
-    with pysam.AlignmentFile('test_output.bam', 'rb') as bam:
+    with pysam.AlignmentFile('test_output/test_output.bam', 'rb') as bam:
         for read in bam:
             try:
                 original = read.get_tag('CR')  # Original tag

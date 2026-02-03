@@ -1,23 +1,26 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_phylo__phytreeviz = Path(workflow.snakefile).parent
 
-wd = workflow.basedir
-
-rule all:
+rule test_phylo__phytreeviz__all:
     input:
-        'test.png'
+        files = [TEST_ROOT_phylo__phytreeviz/'test_output/test.png'],
+        tests = [TEST_ROOT_phylo__phytreeviz/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log:
+        stdout = TEST_ROOT_phylo__phytreeviz/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_phylo__phytreeviz/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_phylo__phytreeviz} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
 rule test_phytreeviz:
     input:
-        tree = 'test.newick'
+        tree = TEST_ROOT_phylo__phytreeviz/'test.newick'
     output:
-        temp('test.png')
+        temp(TEST_ROOT_phylo__phytreeviz/'test_output/test.png')
     params:
         format = "newick",
         width = 8,
         height = 8
     log:
-        temp('test.log')
+        temp(TEST_ROOT_phylo__phytreeviz/'test_output/test.log')
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_phylo__phytreeviz.parent}"

@@ -1,22 +1,26 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_example__api = Path(workflow.snakefile).parent
 
-# Create test output directory
-import os
-os.makedirs("test_output", exist_ok=True)
+# Use {group}__{tool}__ as a prefix to keep rules distinct
+# Place output & log files in test_ directories to ensure they're not added to git
 
-rule all:
+rule test_example__api__all:
     input:
-        "test_output/basic.fasta",
-        "test_output/frame1.fasta",
+        files = [TEST_ROOT_example__api/"test_output/basic.fasta",
+                TEST_ROOT_example__api/"test_output/frame1.fasta",],
+        tests = [TEST_ROOT_example__api/"tests.py"]
     conda: "env.yaml"
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_example__api/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_example__api/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_example__api} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
 # Test with basic parameters
-rule test_basic:
+rule example__api__basic:
     input:
-        "test_data.fasta"
+        TEST_ROOT_example__api/"test_data.fasta"
     output:
-        "test_output/basic.fasta"
+        TEST_ROOT_example__api/"test_output/basic.fasta"
     params:
         frame=0,
         table=1,
@@ -24,16 +28,16 @@ rule test_basic:
         to_stop=False,
         cds=False
     log:
-        "test_output/basic.log"
+        TEST_ROOT_example__api/"test_output/basic.log"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_example__api.parent}"
 
 # Test with frame 1
-rule test_frame1:
+rule example__api__frame1:
     input:
-        "test_data.fasta"
+        TEST_ROOT_example__api/"test_data.fasta"
     output:
-        "test_output/frame1.fasta"
+        TEST_ROOT_example__api/"test_output/frame1.fasta"
     params:
         frame=1,
         table=1,
@@ -41,6 +45,6 @@ rule test_frame1:
         to_stop=False,
         cds=False
     log:
-        "test_output/frame1.log"
+        TEST_ROOT_example__api/"test_output/frame1.log"
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_example__api.parent}"

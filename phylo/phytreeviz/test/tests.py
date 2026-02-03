@@ -4,12 +4,12 @@ from PIL import Image # type: ignore
 
 def test_plot_output_exists():
     """Test plot exists"""
-    assert os.path.exists('test.png')
+    assert os.path.exists('test_output/test.png')
 
 def test_plot_is_valid():
     """Test plot is valid image"""
     try:
-        img = Image.open('test.png')
+        img = Image.open('test_output/test.png')
         img.verify()
         assert True
     except:

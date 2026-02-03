@@ -1,20 +1,23 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_phylo__fasttree = Path(workflow.snakefile).parent
 
-wd = workflow.basedir
-
-rule all:
+rule test_phylo__fasttree__all:
     input:
-        'test.newick'
+        files = [TEST_ROOT_phylo__fasttree/'test_output/test.newick'],
+        tests = [TEST_ROOT_phylo__fasttree/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_phylo__fasttree/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_phylo__fasttree/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_phylo__fasttree} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_fasttree:
+rule test_phylo__fasttree:
     input:
-        alignment = 'alignment.fasta'
+        alignment = TEST_ROOT_phylo__fasttree/'alignment.fasta'
     output:
-        temp('test.newick')
+        temp(TEST_ROOT_phylo__fasttree/'test_output/test.newick')
     log:
-        temp('test.log')
+        temp(TEST_ROOT_phylo__fasttree/'test_output/test.log')
     threads: 2
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_phylo__fasttree.parent}"

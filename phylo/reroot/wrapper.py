@@ -6,13 +6,12 @@ useful for ensuring proper tree orientation and outgroup placement.
 """
 
 __author__ = "Will Dampier"
-__copyright__ = "Copyright 2024"
+__copyright__ = "Copyright 2025"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 import os
-from pathlib import Path
 from typing import Optional
 
 import dendropy  # type: ignore
@@ -52,8 +51,7 @@ if not root_taxon:
 try:
     tree = dendropy.Tree.get(
         path=input_tree,
-        schema=schema,
-        preserve_underscores=True
+        schema=schema
     )
 except Exception as e:
     raise ValueError(f"Failed to read tree file: {str(e)}")
@@ -83,8 +81,7 @@ try:
         path=output_tree,
         schema=schema,
         suppress_edge_lengths=not preserve_branch_lengths,
-        suppress_internal_node_labels=not preserve_support_values,
-        preserve_underscores=True
+        suppress_internal_node_labels=not preserve_support_values
     )
 except Exception as e:
     raise ValueError(f"Failed to write rerooted tree: {str(e)}") 

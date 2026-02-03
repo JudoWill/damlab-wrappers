@@ -1,0 +1,45 @@
+# Seaborn Plot Metrics
+column_names:
+- category
+- value
+- group
+input_shape:
+  columns: 3
+  rows: 9
+memory_usage_bytes: !!python/object/apply:numpy._core.multiarray.scalar
+- !!python/object/apply:numpy.dtype
+  args:
+  - i8
+  - false
+  - true
+  state: !!python/tuple
+  - 3
+  - <
+  - null
+  - null
+  - null
+  - -1
+  - -1
+  - 0
+- !!binary |
+  HgMAAAAAAAA=
+parameters:
+  axis_kwargs:
+    title: Combined Scatter and Line Plot
+  fig_kwargs:
+    figsize: !!python/tuple
+    - 10
+    - 8
+  plot_kwargs:
+  - alpha: 0.5
+    hue: group
+    x: category
+    y: value
+  - hue: group
+    markers: true
+    style: group
+    x: category
+    y: value
+  plot_type:
+  - scatterplot
+  - lineplot

@@ -75,22 +75,39 @@ class MultiqcModule(BaseMultiqcModule):
         
         # Create headers for each region
         for region in sorted(self._regions):
-            headers[f'deletion_frequency_{region}'] = {
-                'title': f'{region} Del. Freq.',
-                'description': f'Deletion frequency for {region}',
+            headers[f'partial_deletion_frequency_{region}'] = {
+                'title': f'{region} Partial Del. Freq.',
+                'description': f'Partial deletion frequency for {region}',
                 'max': 1,
                 'min': 0,
                 'scale': 'RdYlBu-rev',
                 'format': '{:,.2%}',
                 'placement': 1000
             }
-            headers[f'reads_with_deletion_{region}'] = {
-                'title': f'{region} Reads w/Del',
-                'description': f'Number of reads containing the deletion in {region}',
+            headers[f'full_deletion_frequency_{region}'] = {
+                'title': f'{region} Full Del. Freq.',
+                'description': f'Full deletion frequency for {region}',
+                'max': 1,
+                'min': 0,
+                'scale': 'RdYlBu-rev',
+                'format': '{:,.2%}',
+                'placement': 1100
+            }
+            headers[f'reads_covered_partial_deleted_{region}'] = {
+                'title': f'{region} Partial Del. Reads',
+                'description': f'Number of reads with partial deletion in {region}',
                 'scale': 'PuRd',
                 'format': '{:,.0f}',
                 'hidden': True,
-                'placement': 1100
+                'placement': 1200
+            }
+            headers[f'reads_covered_full_deleted_{region}'] = {
+                'title': f'{region} Full Del. Reads',
+                'description': f'Number of reads with full deletion in {region}',
+                'scale': 'PuRd',
+                'format': '{:,.0f}',
+                'hidden': True,
+                'placement': 1300
             }
             headers[f'reads_covering_required_{region}'] = {
                 'title': f'{region} Reads Covering',
@@ -98,7 +115,7 @@ class MultiqcModule(BaseMultiqcModule):
                 'scale': 'YlGn',
                 'format': '{:,.0f}',
                 'hidden': True,
-                'placement': 1200
+                'placement': 1400
             }
             headers[f'total_reads_{region}'] = {
                 'title': f'{region} Total Reads',
@@ -106,7 +123,7 @@ class MultiqcModule(BaseMultiqcModule):
                 'scale': 'GnBu',
                 'format': '{:,.0f}',
                 'hidden': True,
-                'placement': 1300
+                'placement': 1500
             }
 
         # Fill in the data
@@ -116,8 +133,10 @@ class MultiqcModule(BaseMultiqcModule):
                 general_stats_data[s_name].update({
                     f'total_reads_{region}': data['total_reads'],
                     f'reads_covering_required_{region}': data['reads_covering_required'],
-                    f'reads_with_deletion_{region}': data['reads_with_deletion'],
-                    f'deletion_frequency_{region}': data['deletion_frequency']
+                    f'reads_covered_partial_deleted_{region}': data['reads_covered_partial_deleted'],
+                    f'reads_covered_full_deleted_{region}': data['reads_covered_full_deleted'],
+                    f'partial_deletion_frequency_{region}': data['partial_deletion_frequency'],
+                    f'full_deletion_frequency_{region}': data['full_deletion_frequency']
                 })
         
         self.general_stats_addcols(general_stats_data, headers)
@@ -130,29 +149,48 @@ class MultiqcModule(BaseMultiqcModule):
     
     def _add_deletion_violin(self):
         """Add violin plot of deletion frequencies for all regions."""
-        # Create violin data
-        violin_data = {}
+        # Create violin data for both partial and full deletions
+        violin_data_partial = {}
+        violin_data_full = {}
         
         # Collect deletion frequencies for each sample
         for s_name, regions in self._deletion_freq_data.items():
-            violin_data[s_name] = {}
+            violin_data_partial[s_name] = {}
+            violin_data_full[s_name] = {}
             for region in sorted(self._regions):
                 if region in regions:
-                    violin_data[s_name][region] = regions[region]['deletion_frequency']
+                    violin_data_partial[s_name][region] = regions[region]['partial_deletion_frequency']
+                    violin_data_full[s_name][region] = regions[region]['full_deletion_frequency']
 
         self.add_section(
-            name='Deletion Frequency Distribution',
-            anchor='deletion-frequency-violin',
-            description='Distribution of deletion frequencies across samples for all regions',
-            plot=violin.plot(violin_data,
+            name='Partial Deletion Frequency Distribution',
+            anchor='partial-deletion-frequency-violin',
+            description='Distribution of partial deletion frequencies across samples for all regions',
+            plot=violin.plot(violin_data_partial,
                             pconfig={
-                                'id': 'deletion_frequency_violin',
-                                'title': 'Deletion Frequency Distribution',
-                                'ylab': 'Deletion Frequency',
+                                'id': 'partial_deletion_frequency_violin',
+                                'title': 'Partial Deletion Frequency Distribution',
+                                'ylab': 'Partial Deletion Frequency',
                                 'ymin': 0,
                                 'ymax': 1,
                                 'violin_width': 0.8,
-                                'violin_box': True  # Show box plot inside violin
+                                'violin_box': True
+                            })
+        )
+
+        self.add_section(
+            name='Full Deletion Frequency Distribution',
+            anchor='full-deletion-frequency-violin',
+            description='Distribution of full deletion frequencies across samples for all regions',
+            plot=violin.plot(violin_data_full,
+                            pconfig={
+                                'id': 'full_deletion_frequency_violin',
+                                'title': 'Full Deletion Frequency Distribution',
+                                'ylab': 'Full Deletion Frequency',
+                                'ymin': 0,
+                                'ymax': 1,
+                                'violin_width': 0.8,
+                                'violin_box': True
                             })
         )
     
@@ -164,15 +202,16 @@ class MultiqcModule(BaseMultiqcModule):
             if region in regions:
                 d = regions[region]
                 deletion_data[s_name] = {
-                    'With Deletion': d['reads_with_deletion'],
-                    'Without Deletion': d['reads_covering_required'] - d['reads_with_deletion'],
-                    'Not Covering': d['total_reads'] - d['reads_covering_required']
+                    'Total Reads': d['total_reads'],
+                    'Reads Covering Required Region': d['reads_covering_required'],
+                    'Reads with Partial Deletion': d['reads_covered_partial_deleted'],
+                    'Reads with Full Deletion': d['reads_covered_full_deleted']
                 }
 
         self.add_section(
             name=f'Deletion Statistics - {region}',
             anchor=f'deletion-frequency-stats-{region}',
-            description=f'Distribution of reads with respect to deletion and coverage for {region}',
+            description=f'Distribution of reads with respect to partial and full deletions for {region}',
             plot=bargraph.plot(deletion_data,
                              pconfig={
                                  'id': f'deletion_frequency_stats_{region}',

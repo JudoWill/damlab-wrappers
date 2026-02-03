@@ -1,39 +1,41 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_dorado__simplex = Path(workflow.snakefile).parent
 
-wd = workflow.basedir
-TEST_DATA_DIR = join(wd, '../../tests')
-
-rule all:
+rule test_dorado__simplex__all:
     input:
-        'test.bam',
-        'test_dir.bam'
+        files = [TEST_ROOT_dorado__simplex/'test_output/test.bam',
+                TEST_ROOT_dorado__simplex/'test_output/test_dir.bam'],
+        tests = [TEST_ROOT_dorado__simplex/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log: 
+        stdout = TEST_ROOT_dorado__simplex/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_dorado__simplex/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_dorado__simplex} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_simplex_single:
+rule test_dorado__simplex__single:
     input:
-        pod = join(TEST_DATA_DIR, 'filtered.pod5')
+        pod = TEST_ROOT_dorado__simplex/'../../tests/filtered.pod5'
     output:
-        temp('test.bam')
+        temp(TEST_ROOT_dorado__simplex/'test_output/test.bam')
     log:
-        temp('test.log')
+        temp(TEST_ROOT_dorado__simplex/'test_output/test.log')
     threads: 2
     params:
         gpu = 'all',
         models_directory=config.get('DORADO_MODELS_DIR', '')
     wrapper:
-        "file:../"
+        f"file:{TEST_ROOT_dorado__simplex.parent}"
 
-rule test_simplex_directory:
+rule test_dorado__simplex__directory:
     input:
-        pod = TEST_DATA_DIR  # directory containing filtered.pod5
+        pod = TEST_ROOT_dorado__simplex/'../../tests/'  # directory containing filtered.pod5
     output:
-        temp('test_dir.bam')
+        temp(TEST_ROOT_dorado__simplex/'test_output/test_dir.bam')
     log:
-        temp('test_dir.log')
+        temp(TEST_ROOT_dorado__simplex/'test_output/test_dir.log')
     threads: 2
     params:
         gpu = 'all',
         models_directory=config.get('DORADO_MODELS_DIR', '')
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_dorado__simplex.parent}"

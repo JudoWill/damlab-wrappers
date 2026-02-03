@@ -17,7 +17,7 @@ if "snakemake" in locals():
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        filename=snakemake.log[0] if hasattr(snakemake, 'log') else None
+        filename=snakemake.log[0] if hasattr(snakemake, 'log') and snakemake.log else None
     )
 else:
     logging.basicConfig(

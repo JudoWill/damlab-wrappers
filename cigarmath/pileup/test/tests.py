@@ -7,11 +7,11 @@ import math
 
 def test_output_exists():
     """Test that output TSV file was created"""
-    assert os.path.exists('test_output.tsv')
+    assert os.path.exists('test_output/test_output.tsv')
 
 def test_output_format():
     """Test that output TSV has correct format"""
-    with open('test_output.tsv', newline='') as f:
+    with open('test_output/test_output.tsv', newline='') as f:
         reader = csv.reader(f, delimiter='\t')
         
         # Check header
@@ -32,7 +32,7 @@ def test_output_format():
 
 def test_depth_calculation():
     """Test that depths are calculated correctly"""
-    with open('test_output.tsv', newline='') as f:
+    with open('test_output/test_output.tsv', newline='') as f:
         reader = csv.reader(f, delimiter='\t')
         next(reader)  # Skip header
         
@@ -44,7 +44,7 @@ def test_depth_calculation():
 
 def test_entropy_calculation():
     """Test that entropy values are reasonable"""
-    with open('test_output.tsv', newline='') as f:
+    with open('test_output/test_output.tsv', newline='') as f:
         reader = csv.reader(f, delimiter='\t')
         next(reader)  # Skip header
         

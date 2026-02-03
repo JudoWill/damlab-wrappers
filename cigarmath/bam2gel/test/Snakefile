@@ -1,0 +1,68 @@
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__bam2gel = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__bam2gel__all:
+    input:
+        files = [TEST_ROOT_cigarmath__bam2gel/'test_output/test_gel.png',
+                TEST_ROOT_cigarmath__bam2gel/'test_output/test_metrics.yaml',
+                TEST_ROOT_cigarmath__bam2gel/'test_output/test_gel_multi.png',],
+        tests = [TEST_ROOT_cigarmath__bam2gel/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__bam2gel/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__bam2gel/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__bam2gel} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__bam2gel:
+    input:
+        TEST_ROOT_cigarmath__bam2gel/'test_output/test.bam'
+    output:
+        TEST_ROOT_cigarmath__bam2gel/'test_output/test_gel.png',
+        TEST_ROOT_cigarmath__bam2gel/'test_output/test_metrics.yaml'
+    log:
+        TEST_ROOT_cigarmath__bam2gel/'test_output/main.log'
+    params:
+        mode = 'read_length',
+        names = ['test_sample'],
+        bin_width = 250,
+        max_size = 10000
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__bam2gel.parent}"
+
+
+rule test_cigarmath__bam2gel_multi:
+    input:
+        [TEST_ROOT_cigarmath__bam2gel / 'test_output/test.bam',
+        TEST_ROOT_cigarmath__bam2gel / 'test_output/test_sub.bam']
+    output:
+        TEST_ROOT_cigarmath__bam2gel / 'test_output/test_gel_multi.png',
+    log:
+        TEST_ROOT_cigarmath__bam2gel/'test_output/multi.log'
+    params:
+        mode = 'read_length',
+        names = ['test_sample', 'subseted'],
+        bin_width = 250,
+        max_size = 10000
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__bam2gel.parent}"
+
+rule:
+    input:
+        TEST_ROOT_cigarmath__bam2gel / 'test_output/test.bam'
+    output:
+        temp(TEST_ROOT_cigarmath__bam2gel / 'test_output/test_sub.bam')
+    params:
+        extra = '-s 2.1'
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/view" 
+
+rule:
+    input:
+        TEST_ROOT_cigarmath__bam2gel / '../../test_data/test.sam'
+    output:
+        temp(TEST_ROOT_cigarmath__bam2gel / 'test_output/test.bam')
+    params:
+        extra = '-n'
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 

@@ -4,17 +4,25 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2024"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.0.2"
 
 import os
 import sys
 import logging
 
-# Configure basic logging to stdout
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging to use Snakemake's log file
+if "snakemake" in locals():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        filename=snakemake.log[0] if hasattr(snakemake, 'log') and snakemake.log else None
+    )
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
 logger = logging.getLogger('hiv-bert-wrapper')
 
 # Check if we need to use a custom environment

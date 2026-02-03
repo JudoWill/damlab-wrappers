@@ -4,7 +4,7 @@ import pandas as pd
 import yaml
 
 # Define build directory path
-BUILD_DIR = os.path.join(os.path.dirname(__file__), '.build')
+BUILD_DIR = os.path.join(os.path.dirname(__file__), 'test_output')
 
 def test_output_exists():
     """Test that output files exist"""

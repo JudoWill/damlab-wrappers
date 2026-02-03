@@ -25,27 +25,36 @@ input_file = snakemake.input[0]
 output_file = snakemake.output[0]
 
 # Get parameters with defaults
-# This is a common pattern in wrappers - providing sensible defaults
-frame = snakemake.params.get("frame", 0)
-table = snakemake.params.get("table", 1)
+frame = snakemake.params.get("frame", 1)
+min_len = snakemake.params.get("min_len", None)
+transl_table = snakemake.params.get("transl_table", 1)
 trim = snakemake.params.get("trim", False)
 extra = snakemake.params.get("extra", "")
 
+# Get threads from snakemake
+threads = snakemake.threads
+
 # Build command arguments
-# This is a common pattern - building command arguments based on parameters
 args = []
 
 # Add frame argument if specified
 if frame is not None:
     args.append(f"--frame {frame}")
 
-# Add table argument if specified
-if table is not None:
-    args.append(f"--table {table}")
+# Add min_len argument if specified
+if min_len is not None:
+    args.append(f"--min-len {min_len}")
+
+# Add translation table argument if specified
+if transl_table is not None:
+    args.append(f"--transl-table {transl_table}")
 
 # Add trim argument if specified
 if trim:
     args.append("--trim")
+
+# Add threads
+args.append(f"--threads {threads}")
 
 # Add any extra arguments
 if extra:
@@ -55,15 +64,13 @@ if extra:
 args_str = " ".join(args)
 
 # Create log format string
-# This is a common pattern in wrappers - providing logging
 log = snakemake.log_fmt_shell(stdout=True, stderr=True)
 
 # Execute the command
-# This is the core of a shell wrapper - executing the command with the built arguments
 shell(
     "seqkit translate "
-    "-i {input_file} "
     "-o {output_file} "
+    "{input_file} "
     "{args_str} "
     "{log}"
 ) 

@@ -1,19 +1,23 @@
-from os.path import join
+# Get the directory of the current Snakefile
+TEST_ROOT_phylo__reroot = Path(workflow.snakefile).parent
 
-wd = workflow.basedir
 
-rule all:
+rule test_phylo__reroot__all:
     input:
-        'test_rerooted.newick'
+        files = [TEST_ROOT_phylo__reroot/'test_output/test_rerooted.newick'],
+        tests = [TEST_ROOT_phylo__reroot/"tests.py"]
     conda: 'env.yaml'
-    shell: "pytest tests.py"
+    log:
+        stdout = TEST_ROOT_phylo__reroot/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_phylo__reroot/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_phylo__reroot} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
 
-rule test_reroot:
+rule test_phylo__reroot:
     input:
-        tree = 'test.newick'
+        tree = TEST_ROOT_phylo__reroot/'test.newick'
     output:
-        temp('test_rerooted.newick')
+        temp(TEST_ROOT_phylo__reroot/'test_output/test_rerooted.newick')
     params:
         root_taxon = "Seq1"
     wrapper:
-        "file:../" 
+        f"file:{TEST_ROOT_phylo__reroot.parent}"

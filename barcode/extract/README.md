@@ -4,7 +4,7 @@ A wrapper for extracting cellular barcodes and UMIs from BAM files using regex p
 
 ## Version
 
-Current version: 1.0.0 (First stable release)
+Current version: 1.1.0
 
 For a detailed list of changes, see the [CHANGELOG.md](CHANGELOG.md).
 
@@ -59,7 +59,16 @@ rule extract_barcodes:
 
 Either specify a built-in pattern:
 - `builtin` (str, optional): Name of built-in primer pattern set to use. Available options:
-  - 'SIVmac239m2': Primers for SIVmac239m2 construct using the SIV-NFL protocol
+  - `SIVNFL` : Primers for the current Nanopore SIV-NFL PCR strategy
+  - Any of from [Figure 5](https://journals.asm.org/doi/full/10.1128/jvi.01420-19) :
+    - `SIVmac239M`
+    - `SIVmac239m2`
+    - `SIVmac239Opt5M`
+    - `bSHIV1054M`
+    - `bSHIVAD8EOM`
+    - `cSHIV174M`
+    - `cSHIV224M`
+  - Delimit multiple builtins with commas, ie `builtin = 'SIVNFL,SIVmac239m2'` to load both together.
 
 Or specify custom patterns:
 - `left_primer` (str, required if builtin not specified): Regex pattern for left primer with UMI capture group

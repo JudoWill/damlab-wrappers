@@ -1,0 +1,36 @@
+# Seaborn Jointplot Metrics
+column_names:
+- x
+- y
+- group
+input_shape:
+  columns: 3
+  rows: 3000
+memory_usage_bytes: !!python/object/apply:numpy._core.multiarray.scalar
+- !!python/object/apply:numpy.dtype
+  args:
+  - i8
+  - false
+  - true
+  state: !!python/tuple
+  - 3
+  - <
+  - null
+  - null
+  - null
+  - -1
+  - -1
+  - 0
+- !!binary |
+  9AUDAAAAAAA=
+parameters:
+  fig_kwargs: {}
+  fillna: null
+  joint_kwargs:
+    hue: group
+    kind: kde
+  marginal_kwargs:
+    alpha: 0.5
+    fill: true
+  x: x
+  y: y

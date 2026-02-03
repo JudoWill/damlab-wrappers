@@ -1,0 +1,37 @@
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__MDS = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__MDS__all:
+    input:
+        files = [TEST_ROOT_cigarmath__MDS/'test_output/test_output.yaml',
+                 TEST_ROOT_cigarmath__MDS/'test_output/test_read_level.csv',],
+        tests = [TEST_ROOT_cigarmath__MDS/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__MDS/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__MDS/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__MDS} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule test_cigarmath__MDS__maximal_deletion_size:
+    input:
+        TEST_ROOT_cigarmath__MDS / 'test_output/test.bam'
+    output:
+        TEST_ROOT_cigarmath__MDS / 'test_output/test_output.yaml',
+        TEST_ROOT_cigarmath__MDS / 'test_output/test_read_level.csv'
+    params:
+        sample_name = 'test'
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__MDS.parent}"
+
+
+rule:
+    input:
+        TEST_ROOT_cigarmath__MDS / '../../test_data/test.sam'
+    output:
+        temp(TEST_ROOT_cigarmath__MDS / 'test_output/test.bam')
+    params:
+        extra = '-n'
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort" 
