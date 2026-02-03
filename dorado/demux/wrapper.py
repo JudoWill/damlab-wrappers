@@ -92,9 +92,11 @@ with tempfile.TemporaryDirectory(dir=snakemake.params.get("tempdir", None)) as t
     extension = ".fastq" if emit_fastq else ".bam"
     for file in glob.glob(f"{temp_output}/*{extension}"):
         filename = os.path.basename(file)
+        print(filename)
         # Extract barcode from filename
         for barcode, output_name in barcode_to_output.items():
             if f"_{barcode}" in filename:
+                print(f"Found {barcode} in {filename}")
                 target_file = os.path.join(output_dir, output_name) + extension
                 if path.exists(target_file):
                     os.remove(target_file)

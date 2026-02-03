@@ -1,0 +1,91 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+description: Describes the properties of a nanopore run
+
+required:
+  - run_date
+  - library_prep_kits
+  - flow_cell_product_code
+  - position
+  - run_id
+  - project_code
+
+properties:
+    run_date: 
+        type: string
+        description: 'The date of the start of the run. YYYY-MM-DD'
+    
+    pcr_protocol:
+        type: string
+        description: 'The PCR protocol used for amplification'
+        enum: 
+          - hiv-nfl
+          - hiv-nfl-umi
+          - hiv-targeted
+          - siv-nfl
+          - siv-nfl-umi
+        
+    pcr_initials:
+        type: string
+        description: 'The initials of who did the PCR amplification'
+    
+    library_prep_kits:
+        type: array
+        description: 'The kits used for doing the library prep'
+        items:
+          type: string
+          enum: 
+            - SQK-NBD114-24
+            - EXP-NBD103
+            - EXP-NBD104
+            - EXP-NBD114
+            - SQK-NBD111-24
+            - SQK-RBK001
+            - SQK-RBK004
+            
+    library_prep_initials: 
+        type: string
+        description: 'The initials of who did the library prep amplification'
+    
+    flow_cell_product_code:
+        type: string
+        description: 'The flowcell type'
+        enum:
+            - FLO-MIN106
+            - FLO-MIN111
+            - FLO-MIN114
+
+    flow_cell_operator_initials:
+        type: string
+        description: 'The initials of who did the flowcell run'
+        
+    flow_cell_id:
+        type: string
+        description: 'The ID of the flowcell for this run.'
+        
+    data_processing_initials:
+        type: string
+        description: 'The initials of who processed the data'
+        
+    position:
+        type: string
+        decription: 'The MinIon position ID'
+        enum:
+          - "MN35859"
+        
+    run_id: 
+        type: string
+        decription: 'The unique hash code for this run'
+        
+    project_code:
+        type: string
+        description: A code to denote each project for billing and lookup purposes
+        enum:
+          - CNHC
+          - WigDelany
+          - NonDelany
+          - WigCRISPR
+          - NonTAT
+          - Chairs
+          - mixed
+          - NEW
+
