@@ -37,5 +37,5 @@ rule demux_run:
     log:
         'demux.log'
     wrapper:
-        #"https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/dorado/demux/"
-        "file:/home/jupyter-will/repos/damlab-wrappers/dorado/demux"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/dorado/demux/"
+        #"file:/home/jupyter-will/repos/damlab-wrappers/dorado/demux"
