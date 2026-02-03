@@ -38,6 +38,26 @@ rule strainline_haplotypes:
         f"file://{wrappers_path}/strainline/strainline"
 ```
 
+## Workflows
+
+### Proviral NFL Pipeline
+
+A complete end-to-end pipeline for processing Nanopore sequencing data from POD5 files to aligned BAMs and QC reports. Ideal for viral near-full-length (NFL) sequencing projects.
+
+**Features:**
+- Duplex and simplex basecalling with Dorado
+- Scatter mode for distributed cluster execution
+- Automated demultiplexing
+- Reference-based alignment
+- Comprehensive QC reporting with MultiQC
+
+**Documentation:** [`workflows/proviral_nfl.md`](workflows/proviral_nfl.md)
+
+**Quick Start:**
+```bash
+# Create config and samples.csv, then run:
+snakemake --snakefile workflows/proviral_nfl.smk --cores 8 --use-conda
+```
 
 ## Dorado basecalling
 
