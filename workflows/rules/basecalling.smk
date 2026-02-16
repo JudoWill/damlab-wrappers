@@ -117,7 +117,7 @@ rule pod5_duplexing_scattered:
     input:
         pod = get_pod5_path_from_basename
     output:
-        'duplex/scattered/{basename}.bam'
+        temp('duplex/scattered/{basename}.bam')
     params:
         model = config.get('DORADO_MODEL', config.get('DUPLEX_MODEL', 'dna_r10.4.1_e8.2_5khz_stereo@v1.3')),
         models_directory = config.get('MODEL_ROOT'),
@@ -129,7 +129,7 @@ rule pod5_simplex_scattered:
     input:
         pod = get_pod5_path_from_basename
     output:
-        'simplex/scattered/{basename}.bam'
+        temp('simplex/scattered/{basename}.bam')
     params:
         model = config.get('DORADO_MODEL', config.get('SIMPLEX_MODEL', 'dna_r9.4.1_e8_sup@v3.6')),
         models_directory = config.get('MODEL_ROOT'),
