@@ -1,6 +1,6 @@
 rule metrics:
     input:
-        reads = 'aligned/{sample}.mm2.bam'
+        reads = 'aligned/{sample}.sorted.bam'
     output:
         'metrics/{sample}.hivmetrics.yaml'
     params:
@@ -12,7 +12,7 @@ rule metrics:
 
 rule depth:
     input:
-        reads = 'aligned/{sample}.mm2.bam'
+        reads = 'aligned/{sample}.sorted.bam'
     output:
         'metrics/{sample}.depth.txt'
     log:
