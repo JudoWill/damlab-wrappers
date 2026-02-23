@@ -24,7 +24,8 @@ rule multiqc:
         expand("build/primercheck/{sample}.primercheck.yaml", sample=SAMPLES),
         expand("build/hivbert/{sample}.hivbert.yaml", sample=SAMPLES),
         expand("build/intactness/{sample}.intactness.yaml", sample=SAMPLES),
-        expand("build/slice/{sample}.{region}.metrics.yaml", sample=SAMPLES, region=REGIONS)
+        expand("build/slice/{sample}.{region}.metrics.yaml", sample=SAMPLES, region=REGIONS),
+        expand("build/deletion_block_detection/{sample}.summary.yaml", sample=SAMPLES)
     output:
         report = "build/multiqc/multiqc_report.html",
         data = "build/multiqc/multiqc_report_data/multiqc_general_stats.txt"
@@ -214,4 +215,28 @@ rule slice_pol_region:
         min_mapq=20
     wrapper:
         "file:../../cigarmath/slice"
-    
+
+
+# Deletion block detection rules
+rule deletion_block_detection_bam:
+    input:
+        "build/hivreads/{sample}.sam"
+    params:
+        extra = '-n'
+    output:
+        temp("build/deletion_block_detection/{sample}.bam")
+    wrapper:
+        "v5.8.0/bio/samtools/sort"
+
+rule deletion_block_detection_mqc:
+    input:
+        bams = "build/deletion_block_detection/{sample}.bam"
+    output:
+        reads = "build/deletion_block_detection/{sample}.reads.csv",
+        deletions = "build/deletion_block_detection/{sample}.deletions.csv",
+        summary = "build/deletion_block_detection/{sample}.summary.yaml"
+    params:
+        min_deletion_size = 50,
+        sample_name = lambda wildcards: wildcards.sample
+    wrapper:
+        "file:../../cigarmath/deletion_block_detection"

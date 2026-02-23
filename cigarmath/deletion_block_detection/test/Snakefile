@@ -1,0 +1,39 @@
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__DBD = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__DBD__all:
+    input:
+        files = [TEST_ROOT_cigarmath__DBD/'test_output/reads.csv',
+                TEST_ROOT_cigarmath__DBD/'test_output/deletions.csv',
+                TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml'],
+        tests = [TEST_ROOT_cigarmath__DBD/"tests.py"]
+    conda: 'env.yaml'
+    log: 
+        stdout = TEST_ROOT_cigarmath__DBD/"test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_cigarmath__DBD/"test_output/pytest.stderr.log"
+    shell: "cd {TEST_ROOT_cigarmath__DBD} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_cigarmath__DBD__deletion_block_detection:
+    input:
+        bams = TEST_ROOT_cigarmath__DBD/'test_output/test.bam'
+    output:
+        reads = TEST_ROOT_cigarmath__DBD/'test_output/reads.csv',
+        deletions = TEST_ROOT_cigarmath__DBD/'test_output/deletions.csv',
+        summary = TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml'
+    params:
+        min_deletion_size = 50,
+        sample_name = 'test'
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__DBD.parent}"
+
+
+rule:
+    input:
+        TEST_ROOT_cigarmath__DBD / '../../test_data/test.sam'
+    output:
+        temp(TEST_ROOT_cigarmath__DBD / 'test_output/test.bam')
+    params:
+        extra = '-n'
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort"

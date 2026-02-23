@@ -33,6 +33,7 @@ include: "cigarmath/deletion_frequency/test/Snakefile"
 include: "cigarmath/maximal_deletion_size/test/Snakefile"
 include: "cigarmath/pileup/test/Snakefile"
 include: "cigarmath/slice/test/Snakefile"
+include: "cigarmath/deletion_block_detection/test/Snakefile"
 
 include: "dorado/demux/test/Snakefile"
 include: "dorado/duplex/test/Snakefile"
@@ -63,6 +64,7 @@ rule test_cpu:
         rules.test_cigarmath__MDS__all.log,
         rules.test_cigarmath__pileup__all.log,
         rules.test_cigarmath__slice__all.log,
+        rules.test_cigarmath__DBD__all.log,
         rules.test_dorado__demux__all.log,
         rules.test_msa__muscle__all.log,
         rules.test_pandas__merge__all.log,

@@ -56,3 +56,7 @@ def add_config():
     if "slice" not in config.sp:
         config.update_dict(config.sp, {"slice": {"contents": "# Slice metrics",
                                                   "num_lines": 10}})
+
+    if "deletion_block_detection" not in config.sp:
+        config.update_dict(config.sp, {"deletion_block_detection": {"contents": "# Cigarmath Deletion Block Detection",
+                                                  "num_lines": 10}})
