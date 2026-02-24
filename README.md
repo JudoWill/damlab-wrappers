@@ -49,6 +49,8 @@ A complete end-to-end pipeline for processing Nanopore sequencing data from POD5
 - Scatter mode for distributed cluster execution
 - Automated demultiplexing
 - Reference-based alignment
+- Haplotype reconstruction with Strainline
+- Deletion block detection for identifying defective proviruses
 - Comprehensive QC reporting with MultiQC
 
 **Documentation:** [`workflows/proviral_nfl.md`](workflows/proviral_nfl.md)
@@ -102,6 +104,8 @@ This package contains wrappers that extend the Seqkit tool.
 This package contains wrappers for the Cigarmath library.
 
  - [`cigarmath/deletion_frequency`](cigarmath/deletion_frequency/README.md) : Calculate the deletion frequency of a given region.
+ - [`cigarmath/deletion_block_detection`](cigarmath/deletion_block_detection/README.md) : Detect large deletion blocks in aligned BAM files, useful for identifying defective proviruses.
+ - [`cigarmath/pileup`](cigarmath/pileup/README.md) : Calculate per-position coverage depth.
 
 ## Phylogenetic tree construction
 

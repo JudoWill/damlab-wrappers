@@ -12,8 +12,9 @@ rule run_report:
     input:
         expand('metrics/{sample_name}.hivmetrics.yaml', sample_name=SAMPLES['sample_name']),
         expand('metrics/{sample_name}.depth.txt', sample_name=SAMPLES['sample_name']),
-        expand('samtools_stats/{sample_name}.txt', sample_name=SAMPLES['sample_name'])
-
+        expand('samtools_stats/{sample_name}.txt', sample_name=SAMPLES['sample_name']),
+        expand('analysis/{sample_name}.haplotypes.fa', sample_name=SAMPLES['sample_name']),
+        expand('analysis/{sample_name}.deletion_summary.yaml', sample_name=SAMPLES['sample_name'])
     output:
         report=f'qc/multiqc.html'
     params:
