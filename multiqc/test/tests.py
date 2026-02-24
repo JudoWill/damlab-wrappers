@@ -1,6 +1,7 @@
 import pytest
 import os
 import csv
+import yaml
 
 
 def test_multiqc_report_exists():
@@ -185,8 +186,6 @@ def test_hivbert():
 
 def test_hivbert_metrics_file():
     """Test that metrics files contain expected values"""
-    import yaml
-    
     # Check sample1 metrics
     with open('build/hivbert/sample1.hivbert.yaml', 'r') as f:
         metrics = yaml.safe_load(f)
@@ -239,4 +238,104 @@ def test_slice():
     sample3 = next(row for row in data if row['Sample'] == 'sample3')
     assert float(sample3['slice-overlapping']) > 0
     assert float(sample3['slice-total_segments']) == 5
+
+
+def test_deletion_block_detection():
+    """Test that deletion block detection columns appear in general stats."""
+    data = get_general_stats_data()
+    assert len(data) == 3
+
+    # Check that all expected columns are present
+    wanted_cols = [
+        "deletion_block_detection-deletion_frequency",
+        "deletion_block_detection-reads_with_deletions",
+        "deletion_block_detection-unique_deletion_count",
+    ]
+    assert all(col in data[0] for col in wanted_cols), \
+        f"Missing columns. Available: {list(data[0].keys())}"
+    
+    # Check that values are reasonable for each sample
+    for row in data:
+        sample = row['Sample']
+        
+        # Deletion frequency should be between 0 and 1
+        del_freq = float(row['deletion_block_detection-deletion_frequency'])
+        assert 0.0 <= del_freq <= 1.0, \
+            f"Sample {sample}: deletion_frequency {del_freq} not in [0, 1]"
+        
+        # Reads with deletions should be non-negative
+        reads_with_dels = float(row['deletion_block_detection-reads_with_deletions'])
+        assert reads_with_dels >= 0, \
+            f"Sample {sample}: reads_with_deletions should be non-negative"
+        
+        # Unique deletion count should be non-negative
+        unique_dels = float(row['deletion_block_detection-unique_deletion_count'])
+        assert unique_dels >= 0, \
+            f"Sample {sample}: unique_deletion_count should be non-negative"
+
+
+def test_deletion_block_detection_output_files():
+    """Test that deletion block detection output files are created correctly."""
+    for sample in ["sample1", "sample2", "sample3"]:
+        summary_path = f'build/deletion_block_detection/{sample}.summary.yaml'
+        reads_path = f'build/deletion_block_detection/{sample}.reads.csv'
+        deletions_path = f'build/deletion_block_detection/{sample}.deletions.csv'
+        
+        # Check summary YAML
+        assert os.path.exists(summary_path), f"Missing {summary_path}"
+        with open(summary_path, 'r') as f:
+            content = f.read()
+            assert content.startswith('# Cigarmath Deletion Block Detection'), \
+                f"YAML should start with MultiQC marker comment"
+            metrics = yaml.safe_load(content)
+        
+        assert metrics['sample_name'] == sample
+        assert metrics['total_reads'] > 0
+        assert metrics['reads_with_deletions'] >= 0
+        assert metrics['unique_deletion_count'] >= 0
+        assert metrics['total_deletion_count'] >= 0
+        assert 0.0 <= metrics['deletion_frequency'] <= 1.0
+        
+        # Check reads CSV exists and has correct structure
+        assert os.path.exists(reads_path), f"Missing {reads_path}"
+        with open(reads_path, 'r') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            assert len(rows) > 0, f"reads.csv for {sample} should have data"
+            expected_cols = {'read_name', 'reference_start', 'reference_end', 'deletions'}
+            assert set(rows[0].keys()) == expected_cols, \
+                f"reads.csv columns mismatch for {sample}"
+        
+        # Check deletions CSV exists and has correct structure
+        assert os.path.exists(deletions_path), f"Missing {deletions_path}"
+        with open(deletions_path, 'r') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            if len(rows) > 0:
+                expected_cols = {'deletion_start', 'deletion_end', 'deletion_size', 
+                               'read_count', 'coverage_count'}
+                assert set(rows[0].keys()) == expected_cols, \
+                    f"deletions.csv columns mismatch for {sample}"
+
+
+def test_deletion_block_detection_plots():
+    """Test that deletion block detection plot data is generated in MultiQC output."""
+    # Check that the MultiQC report data directory contains plot data
+    plot_data_dir = "build/multiqc/multiqc_report_data"
+    assert os.path.exists(plot_data_dir), "MultiQC report data directory should exist"
+    
+    # Check for deletion_block_detection data file
+    expected_data_file = os.path.join(plot_data_dir, "multiqc_deletion_block_detection.txt")
+    assert os.path.exists(expected_data_file), \
+        f"Expected deletion_block_detection data file at {expected_data_file}"
+    
+    # Verify the data file has content for all samples
+    with open(expected_data_file, 'r') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        rows = list(reader)
+    
+    sample_names = {row['Sample'] for row in rows}
+    assert 'sample1' in sample_names, "sample1 should be in plot data"
+    assert 'sample2' in sample_names, "sample2 should be in plot data"
+    assert 'sample3' in sample_names, "sample3 should be in plot data"
 

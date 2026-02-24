@@ -21,7 +21,7 @@ This pipeline handles basecalling, demultiplexing, alignment, and quality contro
 The proviral NFL pipeline processes Nanopore sequencing data through the following stages:
 
 ```
-POD5 Files → Basecalling → Demultiplexing → Read Groups → Alignment → Sorting → Metrics → Report
+POD5 Files → Basecalling → Demultiplexing → Read Groups → Alignment → Sorting → Analysis → Metrics → Report
 ```
 
 **Key Features:**
@@ -29,6 +29,8 @@ POD5 Files → Basecalling → Demultiplexing → Read Groups → Alignment → 
 - Scatter mode for distributed cluster execution
 - Automatic demultiplexing with multiple barcode kits
 - Reference-based alignment with minimap2
+- Haplotype reconstruction with Strainline
+- Deletion block detection for identifying large deletions
 - Comprehensive QC metrics with MultiQC
 - Flexible configuration for different compute environments
 
@@ -83,7 +85,16 @@ Generates quality control metrics for each sample.
 - `depth` - Computes per-position coverage depth
 - `samtools_stats` - Standard BAM statistics
 
-### 5. Reporting (`rules/reporting.smk`)
+### 5. Analysis (`rules/analysis.smk`)
+
+Performs advanced analysis on aligned reads.
+
+**Rules:**
+- `bam_to_fastq` - Converts aligned BAM to FASTQ for strainline input
+- `strainline` - Haplotype reconstruction using Strainline (identifies viral quasispecies)
+- `deletion_block_detection` - Identifies large deletion blocks in aligned reads (useful for detecting defective proviruses)
+
+### 6. Reporting (`rules/reporting.smk`)
 
 Aggregates all QC metrics into interactive HTML report.
 
@@ -184,6 +195,10 @@ MERGE_THREADS: 16                # Threads for merge step
 
 # Alternative input mode
 demuxed_bam_path: /path/to/bam   # Skip basecalling, use pre-demuxed BAM
+
+# Analysis options
+STRAINLINE_PREFIX: /path/to/strainline  # Path to strainline installation
+MIN_DELETION_SIZE: 50                    # Minimum deletion size to detect (default: 50)
 ```
 
 ### Samples CSV Format
@@ -487,6 +502,12 @@ output/
 ├── samtools_stats/               # SAMtools statistics
 │   ├── sample1.txt
 │   └── ...
+├── analysis/                     # Advanced analysis outputs
+│   ├── sample1.haplotypes.fa     # Reconstructed haplotypes (Strainline)
+│   ├── sample1.deletion_reads.csv    # Per-read deletion info
+│   ├── sample1.deletion_blocks.csv   # Unique deletion blocks found
+│   ├── sample1.deletion_summary.yaml # Summary statistics
+│   └── ...
 └── qc/                           # Final QC report
     ├── multiqc.html              # Interactive QC report
     └── multiqc_data/             # Supporting data files
@@ -496,12 +517,15 @@ output/
 
 **Primary Outputs:**
 - `aligned/{sample}.sorted.bam` - Final aligned BAM files for analysis
+- `analysis/{sample}.haplotypes.fa` - Reconstructed viral haplotypes
+- `analysis/{sample}.deletion_blocks.csv` - Detected deletion blocks
 - `qc/multiqc.html` - Comprehensive QC report (open in browser)
 
 **Intermediate Files:**
 - `duplex/basecalled.bam` - All basecalled reads before demux
 - `demux/{sample}.bam` - Demultiplexed reads per sample
 - `metrics/{sample}.depth.txt` - Per-position coverage
+- `analysis/{sample}.deletion_summary.yaml` - Deletion statistics for MultiQC
 
 ## Usage Examples
 
@@ -689,6 +713,8 @@ Logs are in same directory as outputs:
 - demux.log - Demultiplexing log
 - aligned/{sample}.log - Alignment logs
 - metrics/{sample}.hivmetrics.log - Metrics logs
+- analysis/{sample}.strainline.log - Strainline logs
+- analysis/{sample}.deletion_detection.log - Deletion detection logs
 ```
 
 **Validate configuration:**
@@ -770,6 +796,6 @@ For issues or questions:
 
 ---
 
-**Version:** 2.0.0 (with scatter mode support)  
-**Last Updated:** February 3, 2026  
+**Version:** 2.1.0 (with strainline and deletion detection)  
+**Last Updated:** February 24, 2026  
 **Maintainer:** Dampier Lab
