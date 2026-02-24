@@ -1,31 +1,18 @@
 # Strainline haplotype reconstruction rules
 from os.path import join
 
-rule bam_to_fastq:
-    """Convert aligned BAM to FASTQ for strainline input"""
+rule bam_to_fasta:
+    """Convert aligned BAM to FASTA for strainline input"""
     input:
         'aligned/{sample}.sorted.bam'
     output:
-        temp('strainline/{sample}.fastq')
+        temp('strainline/{sample}.fasta')
     params:
         extra="-F 2308" # Skip any unmapped, not primary, and secondary alignments
     log:
-        'strainline/{sample}.bam2fastq.log'
+        'strainline/{sample}.bam2fasta.log'
     wrapper:
-        f"{SNAKEMAKE_WRAPPER_TAG}/bio/samtools/fastq/interleaved"
-
-rule fastq_to_fasta:
-    """Convert aligned BAM to FASTQ for strainline input"""
-    input:
-        'strainline/{sample}.fastq'
-    output:
-        temp('strainline/{sample}.fasta')
-    params:
-        command="seq"
-    log:
-        'strainline/{sample}.fastq2fasta.log'
-    wrapper:
-        f"{SNAKEMAKE_WRAPPER_TAG}/bio/seqkit"
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/fastx/"
 
 rule strainline:
     input:
