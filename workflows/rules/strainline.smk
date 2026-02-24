@@ -8,11 +8,11 @@ rule bam_to_fasta:
     output:
         temp('strainline/{sample}.fasta')
     params:
-        extra="-F 2308" # Skip any unmapped, not primary, and secondary alignments
+        mapped_only = True
     log:
         'strainline/{sample}.bam2fasta.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/fastx/"
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/cigarmath/bam2fastx/"
 
 rule strainline:
     input:

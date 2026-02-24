@@ -1,0 +1,11 @@
+name: bam2fastx
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pysam
+  - python
+  - pip
+  - pip:
+    - git+https://github.com/DamLabResources/cigarmath.git@main

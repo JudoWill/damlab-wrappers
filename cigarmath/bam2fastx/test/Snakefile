@@ -1,0 +1,36 @@
+# Get the directory of the current Snakefile
+TEST_ROOT_cigarmath__bam2fastx = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__bam2fastx__all:
+    input:
+        files=[
+            TEST_ROOT_cigarmath__bam2fastx / "test_output/test.fasta",
+            TEST_ROOT_cigarmath__bam2fastx / "test_output/test.fastq",
+        ],
+        tests=[TEST_ROOT_cigarmath__bam2fastx / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout=TEST_ROOT_cigarmath__bam2fastx / "test_output/pytest.stdout.log",
+        stderr=TEST_ROOT_cigarmath__bam2fastx / "test_output/pytest.stderr.log",
+    shell: "cd {TEST_ROOT_cigarmath__bam2fastx} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule test_cigarmath__bam2fastx_fasta:
+    input:
+        TEST_ROOT_cigarmath__bam2fastx.parent.parent / "test_data" / "test.sam",
+    output:
+        TEST_ROOT_cigarmath__bam2fastx / "test_output/test.fasta",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__bam2fastx.parent}"
+
+
+rule test_cigarmath__bam2fastx_fastq:
+    input:
+        TEST_ROOT_cigarmath__bam2fastx.parent.parent / "test_data" / "test.sam",
+    output:
+        TEST_ROOT_cigarmath__bam2fastx / "test_output/test.fastq",
+    params:
+        output_format="fastq",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__bam2fastx.parent}"
