@@ -85,16 +85,22 @@ Generates quality control metrics for each sample.
 - `depth` - Computes per-position coverage depth
 - `samtools_stats` - Standard BAM statistics
 
-### 5. Analysis (`rules/analysis.smk`)
+### 5. Strainline Haplotype Reconstruction (`rules/strainline.smk`)
 
-Performs advanced analysis on aligned reads.
+Reconstructs viral haplotypes from aligned reads to identify quasispecies.
 
 **Rules:**
-- `bam_to_fastq` - Converts aligned BAM to FASTQ for strainline input
-- `strainline` - Haplotype reconstruction using Strainline (identifies viral quasispecies)
-- `deletion_block_detection` - Identifies large deletion blocks in aligned reads (useful for detecting defective proviruses)
+- `bam_to_fasta` - Converts aligned BAM to FASTA for strainline input
+- `strainline` - Haplotype reconstruction using Strainline
 
-### 6. Reporting (`rules/reporting.smk`)
+### 6. Deletion Block Detection (`rules/deletion_detection.smk`)
+
+Identifies large deletion blocks in aligned reads, useful for detecting defective proviruses.
+
+**Rules:**
+- `deletion_block_detection` - Detects deletions above a configurable size threshold
+
+### 7. Reporting (`rules/reporting.smk`)
 
 Aggregates all QC metrics into interactive HTML report.
 
@@ -502,8 +508,10 @@ output/
 ├── samtools_stats/               # SAMtools statistics
 │   ├── sample1.txt
 │   └── ...
-├── analysis/                     # Advanced analysis outputs
-│   ├── sample1.haplotypes.fa     # Reconstructed haplotypes (Strainline)
+├── strainline/                   # Strainline haplotype reconstruction
+│   ├── sample1.haplotypes.fa     # Reconstructed haplotypes
+│   └── ...
+├── deletion_detection/           # Deletion block detection
 │   ├── sample1.deletion_reads.csv    # Per-read deletion info
 │   ├── sample1.deletion_blocks.csv   # Unique deletion blocks found
 │   ├── sample1.deletion_summary.yaml # Summary statistics
@@ -517,15 +525,15 @@ output/
 
 **Primary Outputs:**
 - `aligned/{sample}.sorted.bam` - Final aligned BAM files for analysis
-- `analysis/{sample}.haplotypes.fa` - Reconstructed viral haplotypes
-- `analysis/{sample}.deletion_blocks.csv` - Detected deletion blocks
+- `strainline/{sample}.haplotypes.fa` - Reconstructed viral haplotypes
+- `deletion_detection/{sample}.deletion_blocks.csv` - Detected deletion blocks
 - `qc/multiqc.html` - Comprehensive QC report (open in browser)
 
 **Intermediate Files:**
 - `duplex/basecalled.bam` - All basecalled reads before demux
 - `demux/{sample}.bam` - Demultiplexed reads per sample
 - `metrics/{sample}.depth.txt` - Per-position coverage
-- `analysis/{sample}.deletion_summary.yaml` - Deletion statistics for MultiQC
+- `deletion_detection/{sample}.deletion_summary.yaml` - Deletion statistics for MultiQC
 
 ## Usage Examples
 
@@ -713,8 +721,8 @@ Logs are in same directory as outputs:
 - demux.log - Demultiplexing log
 - aligned/{sample}.log - Alignment logs
 - metrics/{sample}.hivmetrics.log - Metrics logs
-- analysis/{sample}.strainline.log - Strainline logs
-- analysis/{sample}.deletion_detection.log - Deletion detection logs
+- strainline/{sample}.strainline.log - Strainline logs
+- deletion_detection/{sample}.deletion_detection.log - Deletion detection logs
 ```
 
 **Validate configuration:**
