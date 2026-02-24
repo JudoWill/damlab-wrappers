@@ -12,7 +12,7 @@ rule bam_to_fastq:
     log:
         'strainline/{sample}.bam2fastq.log'
     wrapper:
-        f"{SNAKEMAKE_WRAPPER_TAG}/bio/fastq/interleaved"
+        f"{SNAKEMAKE_WRAPPER_TAG}/bio/samtools/fastq/interleaved"
 
 rule fastq_to_fasta:
     """Convert aligned BAM to FASTQ for strainline input"""
