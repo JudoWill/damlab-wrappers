@@ -13,4 +13,4 @@ rule deletion_block_detection:
     log:
         'deletion_detection/{sample}.deletion_detection.log'
     wrapper:
-        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/cigarmath/deletion_block_detection/"
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/cigarmath/deletion_block_detection/"
