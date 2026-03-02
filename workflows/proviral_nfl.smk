@@ -27,7 +27,7 @@ include: join(WORKFLOW_DIR, "rules/demux.smk")
 include: join(WORKFLOW_DIR, "rules/alignment.smk")
 include: join(WORKFLOW_DIR, "rules/metrics.smk")
 include: join(WORKFLOW_DIR, "rules/strainline.smk")
-include: join(WORKFLOW_DIR, "rules/deletion_detection.smk")
+#include: join(WORKFLOW_DIR, "rules/deletion_detection.smk")
 include: join(WORKFLOW_DIR, "rules/reporting.smk")
 
 def get_final_bam_paths(wildcards):
@@ -45,8 +45,9 @@ def get_all_outputs(wildcards):
         #'qc/multiqc_data.zip'
     ])
     # Add strainline outputs
-    for sample in get_all_samples():
-        outputs.append(f'strainline/{sample}.haplotypes.fa')
+    #for sample in get_all_samples():
+    #    outputs.append(f'strainline/{sample}.haplotypes.fa')
+    
     # Add deletion detection outputs
     for sample in get_all_samples():
         outputs.append(f'deletion_detection/{sample}.deletion_summary.yaml')
