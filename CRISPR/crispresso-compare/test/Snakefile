@@ -1,0 +1,68 @@
+from pathlib import Path
+
+TEST_ROOT_CRISPR__crispresso_compare = Path(workflow.snakefile).parent
+
+# Reuse test data from the crispresso-core test
+CORE_TEST_DATA = TEST_ROOT_CRISPR__crispresso_compare.parent.parent / "crispresso-core/test/test_data"
+CORE_TEST_OUTPUT = TEST_ROOT_CRISPR__crispresso_compare.parent.parent / "crispresso-core/test/test_output"
+
+
+rule test_CRISPR__crispresso_compare__all:
+    input:
+        files = [
+            TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPRessoCompare_sample1_vs_sample2",
+        ],
+        tests = [TEST_ROOT_CRISPR__crispresso_compare / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_CRISPR__crispresso_compare / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_CRISPR__crispresso_compare / "test_output/pytest.stderr.log",
+    shell: "cd {TEST_ROOT_CRISPR__crispresso_compare} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule CRISPR__crispresso_compare__make_run1:
+    """First CRISPResso run to feed into compare test."""
+    input:
+        fastq_r1 = CORE_TEST_DATA / "reads.fastq",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPResso_on_sample1"),
+    params:
+        amplicon_seq = "GCAGTCCGAAGGCTTAGATCCTGCAGGTCGACAGATCCCCGGGTACCGAGCTCGAATTCGTTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCC",
+        guide_seq    = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_compare / "test_output/run1.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_compare.parent.parent}/crispresso-core"
+
+
+rule CRISPR__crispresso_compare__make_run2:
+    """Second CRISPResso run to feed into compare test."""
+    input:
+        fastq_r1 = CORE_TEST_DATA / "reads.fastq",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPResso_on_sample2"),
+    params:
+        amplicon_seq = "GCAGTCCGAAGGCTTAGATCCTGCAGGTCGACAGATCCCCGGGTACCGAGCTCGAATTCGTTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCC",
+        guide_seq    = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_compare / "test_output/run2.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_compare.parent.parent}/crispresso-core"
+
+
+rule CRISPR__crispresso_compare__test_compare:
+    """Run CRISPRessoCompare on the two test CRISPResso outputs."""
+    input:
+        folder_1 = TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPResso_on_sample1",
+        folder_2 = TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPResso_on_sample2",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_compare / "test_output/CRISPRessoCompare_sample1_vs_sample2"),
+    params:
+        sample_1_name = "sample1",
+        sample_2_name = "sample2",
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_compare / "test_output/compare.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_compare.parent}"

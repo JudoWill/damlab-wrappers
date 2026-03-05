@@ -50,6 +50,9 @@ include: "phylo/FastTree/test/Snakefile"
 include: "phylo/phytreeviz/test/Snakefile"
 include: "phylo/reroot/test/Snakefile"
 
+include: "CRISPR/crispresso-core/test/Snakefile"
+include: "CRISPR/crispresso-compare/test/Snakefile"
+
 # Rule to run all tests with coverage
 
 
@@ -75,6 +78,8 @@ rule test_cpu:
         rules.test_phylo__fasttree__all.log,
         rules.test_phylo__phytreeviz__all.log,
         rules.test_phylo__reroot__all.log,
+        rules.test_CRISPR__crispresso_core__all.log,
+        rules.test_CRISPR__crispresso_compare__all.log,
 
 
 rule test_gpu:

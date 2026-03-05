@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Collect wrapper level changes here until merged.
 
 ### Added
+  - [`CRISPR/crispresso-core`](CRISPR/crispresso-core/README.md) [1.0.0] - Wrapper for CRISPResso2 CRISPR editing quantification on a single amplicon. Amplicon sequence may be supplied as an inline string parameter or as a FASTA input file.
+  - [`CRISPR/crispresso-compare`](CRISPR/crispresso-compare/README.md) [1.0.0] - Wrapper for CRISPRessoCompare pairwise comparison of two CRISPResso output directories.
   - [`cigarmath/bam2csv`](cigarmath/bam2csv/README.md) [0.0.1] - Wrapper for extracting fields from a SAM/BAM file into a CSV.
   - `workflows/proviral_nfl` - Added strainline haplotype reconstruction and deletion block detection to the pipeline
   - New `rules/strainline.smk` module with `bam_to_fasta` and `strainline` rules (outputs to `strainline/` directory)

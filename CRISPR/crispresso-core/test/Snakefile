@@ -1,0 +1,49 @@
+from pathlib import Path
+
+TEST_ROOT_CRISPR__crispresso_core = Path(workflow.snakefile).parent
+
+
+rule test_CRISPR__crispresso_core__all:
+    input:
+        files = [
+            TEST_ROOT_CRISPR__crispresso_core / "test_output/CRISPResso_on_param_amplicon",
+            TEST_ROOT_CRISPR__crispresso_core / "test_output/CRISPResso_on_fasta_amplicon",
+        ],
+        tests = [TEST_ROOT_CRISPR__crispresso_core / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_CRISPR__crispresso_core / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_CRISPR__crispresso_core / "test_output/pytest.stderr.log",
+    shell: "cd {TEST_ROOT_CRISPR__crispresso_core} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule CRISPR__crispresso_core__test_param_amplicon:
+    """Test with amplicon sequence provided as a param string."""
+    input:
+        fastq_r1 = TEST_ROOT_CRISPR__crispresso_core / "test_data/reads.fastq",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_core / "test_output/CRISPResso_on_param_amplicon"),
+    params:
+        amplicon_seq = "GCAGTCCGAAGGCTTAGATCCTGCAGGTCGACAGATCCCCGGGTACCGAGCTCGAATTCGTTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCC",
+        guide_seq    = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_core / "test_output/param_amplicon.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_core.parent}"
+
+
+rule CRISPR__crispresso_core__test_fasta_amplicon:
+    """Test with amplicon sequence provided as a FASTA input file."""
+    input:
+        fastq_r1       = TEST_ROOT_CRISPR__crispresso_core / "test_data/reads.fastq",
+        amplicon_fasta = TEST_ROOT_CRISPR__crispresso_core / "test_data/amplicon.fasta",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_core / "test_output/CRISPResso_on_fasta_amplicon"),
+    params:
+        guide_seq = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_core / "test_output/fasta_amplicon.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_core.parent}"

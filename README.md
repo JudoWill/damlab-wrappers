@@ -79,6 +79,13 @@ This package contains wrappers for the POD5 file format.
  - [`pod5/split_by_channel`](pod5/split_by_channel/README.md) : Split POD5 files by channel.
 
 
+## CRISPR
+
+This package contains wrappers for CRISPR editing analysis tools.
+
+ - [`CRISPR/crispresso-core`](CRISPR/crispresso-core/README.md) : CRISPResso2 editing quantification for a single amplicon. Accepts amplicon sequence as an inline string parameter or as a FASTA input file.
+ - [`CRISPR/crispresso-compare`](CRISPR/crispresso-compare/README.md) : CRISPRessoCompare pairwise comparison of two CRISPResso output directories (e.g. treated vs. control).
+
 ## Multiple sequence alignment
 
 This package contains wrappers for the multiple sequence alignment tools.
