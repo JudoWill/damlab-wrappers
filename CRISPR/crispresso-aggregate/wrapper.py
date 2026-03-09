@@ -10,6 +10,7 @@ __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
 __version__ = "1.0.0"
 
+import os
 from pathlib import Path
 
 from snakemake.shell import shell  # type: ignore
@@ -26,9 +27,11 @@ if hasattr(snakemake, "params") and "version" in snakemake.params:
         )
 
 # --- Resolve output directory and run name ---
-# CRISPRessoAggregate writes CRISPRessoAggregate_{name}/ into the cwd,
+# CRISPRessoAggregate writes CRISPRessoAggregate_on_{name}/ into the cwd,
 # so we cd to the parent and derive --name from the output basename.
-out_path = Path(snakemake.output[0])
+# Absolute paths are required throughout: after the cd, any relative paths
+# (inputs, log redirects) would be resolved against the wrong directory.
+out_path = Path(snakemake.output[0]).resolve()
 parent_dir = str(out_path.parent)
 bname = out_path.name
 
@@ -53,6 +56,9 @@ else:
 
 if not input_dirs:
     raise ValueError("At least one CRISPResso output directory must be provided as input.")
+
+# Resolve to absolute paths so the cd to parent_dir doesn't invalidate them
+input_dirs = [os.path.abspath(d) for d in input_dirs]
 
 # --- Optional parameters ---
 min_reads_for_inclusion = snakemake.params.get("min_reads_for_inclusion", None)
@@ -85,7 +91,14 @@ if extra:
     args.append(extra)
 
 args_str = " ".join(args)
-log = snakemake.log_fmt_shell(stdout=True, stderr=True)
+
+# log_fmt_shell may return relative paths; make them absolute so the cd
+# to parent_dir doesn't cause bash to look for the log in the wrong place.
+if snakemake.log:
+    log_path = os.path.abspath(str(snakemake.log[0]))
+    log = f"> {log_path} 2>&1"
+else:
+    log = ""
 
 # cd to parent so CRISPRessoAggregate writes its output folder there
 shell(f"cd {parent_dir} && CRISPRessoAggregate {args_str} {log}")
