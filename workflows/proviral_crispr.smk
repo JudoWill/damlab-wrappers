@@ -226,6 +226,11 @@ rule bam_to_fastq:
         wrapper_path("cigarmath/bam2fastx")
 
 
+def _opt(wildcards, col):
+    """Return the value of an optional samples.csv column, or None if absent/NaN."""
+    return get_sample(wildcards).get(col) if _notna(get_sample(wildcards).get(col)) else None
+
+
 rule crispresso:
     """Run CRISPResso on a single sample.
 
@@ -237,6 +242,10 @@ rule crispresso:
     The amplicon is resolved from the 'amplicon' column:
       - If the value is an existing file path, it is passed as input.amplicon_fasta.
       - Otherwise the value is treated as the amplicon sequence string.
+
+    Optional per-sample columns forwarded to the wrapper when present and
+    non-empty: guide_name, amplicon_name, quantification_window_center,
+    quantification_window_size, expected_hdr_amplicon_seq.
     """
     input:
         fastq_r1       = get_r1_fastq,
@@ -245,11 +254,13 @@ rule crispresso:
     output:
         directory("crispresso/CRISPResso_on_{sample_name}"),
     params:
-        amplicon_seq = lambda wc: (
-            None if is_amplicon_file(get_sample(wc)["amplicon"])
-            else str(get_sample(wc)["amplicon"])
-        ),
-        guide_seq = lambda wc: get_sample(wc)["grna"],
+        amplicon_seq                 = lambda wc: None if is_amplicon_file(get_sample(wc)["amplicon"]) else str(get_sample(wc)["amplicon"]),
+        guide_seq                    = lambda wc: get_sample(wc)["grna"],
+        guide_name                   = lambda wc: _opt(wc, "guide_name"),
+        amplicon_name                = lambda wc: _opt(wc, "amplicon_name"),
+        quantification_window_center = lambda wc: _opt(wc, "quantification_window_center"),
+        quantification_window_size   = lambda wc: _opt(wc, "quantification_window_size"),
+        expected_hdr_amplicon_seq    = lambda wc: _opt(wc, "expected_hdr_amplicon_seq"),
     threads: 4
     log:
         "logs/{sample_name}.crispresso.log",

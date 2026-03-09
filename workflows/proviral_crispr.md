@@ -175,6 +175,11 @@ present.
 | `bam_file` | cond. | Path to a BAM file. Required unless `fastq_r1` is set. |
 | `region` | no | Genomic region in `chr:start-stop` format. Only used with `bam_file`. When set, reads are sliced to this region before CRISPResso. |
 | `comparison` | no | `experiment` or `control`. When present, enables automatic CRISPRessoCompare runs for every experiment × control pair. |
+| `guide_name` | no | Display name for the guide RNA in CRISPResso plots (`--guide_name`). |
+| `amplicon_name` | no | Display name for the amplicon (`--amplicon_name`). Defaults to the FASTA record ID when `amplicon` is a file. |
+| `quantification_window_center` | no | Cleavage offset from the 3′ end of the guide sequence (`--quantification_window_center`). CRISPResso default: −3. |
+| `quantification_window_size` | no | Number of bp around the cleavage site to include in quantification (`--quantification_window_size`). CRISPResso default: 1. |
+| `expected_hdr_amplicon_seq` | no | Expected HDR (homology-directed repair) amplicon sequence (`--expected_hdr_amplicon_seq`). |
 
 ---
 
