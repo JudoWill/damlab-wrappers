@@ -61,6 +61,31 @@ A complete end-to-end pipeline for processing Nanopore sequencing data from POD5
 snakemake --snakefile workflows/proviral_nfl.smk --cores 8 --use-conda
 ```
 
+### Proviral CRISPR Pipeline
+
+An automation pipeline for CRISPResso2 CRISPR editing analysis. Accepts reads
+from paired or single-end FASTQ files, or from a BAM file (with optional
+region-level slicing for long-read data). Supports automatic pairwise
+CRISPRessoCompare runs across labelled experiment and control groups.
+
+**Features:**
+- Flexible read input: paired FASTQ, single-end FASTQ, or BAM file
+- BAM region slicing via `cigarmath/slice` for long-read amplicon extraction
+- Amplicon supplied as an inline sequence string or a FASTA file path
+- Automatic CRISPRessoAggregate report combining all samples into one summary
+- Automatic pairwise CRISPRessoCompare for experiment vs. control groups
+- Wrappers fetched from GitHub by default; override with a local path
+
+**Documentation:** [`workflows/proviral_crispr.md`](workflows/proviral_crispr.md)
+
+**Quick Start:**
+```bash
+# Create samples.csv (and optionally run.meta.yaml), then run:
+snakemake -s workflows/proviral_crispr.smk -d /path/to/run --use-conda --cores 8
+# Or via the data_scripts makefile:
+make proviral-crispr ROOT=/path/to/run MACHINE=Picotte
+```
+
 ## Dorado basecalling
 
 This package contains wrappers for the Nanopore dorado tool.
@@ -85,6 +110,8 @@ This package contains wrappers for CRISPR editing analysis tools.
 
  - [`CRISPR/crispresso-core`](CRISPR/crispresso-core/README.md) : CRISPResso2 editing quantification for a single amplicon. Accepts amplicon sequence as an inline string parameter or as a FASTA input file.
  - [`CRISPR/crispresso-compare`](CRISPR/crispresso-compare/README.md) : CRISPRessoCompare pairwise comparison of two CRISPResso output directories (e.g. treated vs. control).
+ - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) : CRISPRessoAggregate multi-run aggregation into a single combined HTML report and summary plots.
+ - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) : CRISPRessoAggregate multi-run aggregation into a single combined report. Accepts any number of CRISPResso output directories.
 
 ## Multiple sequence alignment
 
@@ -113,6 +140,8 @@ This package contains wrappers for the Cigarmath library.
  - [`cigarmath/deletion_frequency`](cigarmath/deletion_frequency/README.md) : Calculate the deletion frequency of a given region.
  - [`cigarmath/deletion_block_detection`](cigarmath/deletion_block_detection/README.md) : Detect large deletion blocks in aligned BAM files, useful for identifying defective proviruses.
  - [`cigarmath/pileup`](cigarmath/pileup/README.md) : Calculate per-position coverage depth.
+ - [`cigarmath/slice`](cigarmath/slice/README.md) : Extract reads overlapping a genomic region from a BAM file, slicing each read so only bases covering the target window are returned.
+ - [`cigarmath/bam2fastx`](cigarmath/bam2fastx/README.md) : Convert a BAM/SAM file to FASTA or FASTQ format.
 
 ## Phylogenetic tree construction
 

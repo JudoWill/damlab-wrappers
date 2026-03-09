@@ -13,7 +13,12 @@ Collect wrapper level changes here until merged.
 ### Added
   - [`CRISPR/crispresso-core`](CRISPR/crispresso-core/README.md) [1.0.0] - Wrapper for CRISPResso2 CRISPR editing quantification on a single amplicon. Amplicon sequence may be supplied as an inline string parameter or as a FASTA input file.
   - [`CRISPR/crispresso-compare`](CRISPR/crispresso-compare/README.md) [1.0.0] - Wrapper for CRISPRessoCompare pairwise comparison of two CRISPResso output directories.
+  - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) [1.0.0] - Wrapper for CRISPRessoAggregate multi-run aggregation. Combines any number of CRISPResso output directories into a single HTML report and summary plots.
+  - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) [1.0.0] - Wrapper for CRISPRessoAggregate to combine any number of CRISPResso runs into a single summary report.
+  - [`cigarmath/bam2fastx`](cigarmath/bam2fastx/README.md) [0.0.1] - Wrapper for converting BAM/SAM files to FASTA or FASTQ format using cigarmath streaming.
+  - [`cigarmath/slice`](cigarmath/slice/README.md) [1.0.0] - Wrapper for extracting reads overlapping a genomic region from a BAM, slicing each read to return only bases covering the target window.
   - [`cigarmath/bam2csv`](cigarmath/bam2csv/README.md) [0.0.1] - Wrapper for extracting fields from a SAM/BAM file into a CSV.
+  - `workflows/proviral_crispr` [new] - End-to-end CRISPResso2 automation pipeline. Accepts paired/single-end FASTQ or BAM input (with optional region slicing for long reads), resolves amplicons from sequence strings or FASTA files, always produces a CRISPRessoAggregate report across all samples, and optionally runs CRISPRessoCompare across labelled experiment/control groups. See [`workflows/proviral_crispr.md`](workflows/proviral_crispr.md).
   - `workflows/proviral_nfl` - Added strainline haplotype reconstruction and deletion block detection to the pipeline
   - New `rules/strainline.smk` module with `bam_to_fasta` and `strainline` rules (outputs to `strainline/` directory)
   - New `rules/deletion_detection.smk` module with `deletion_block_detection` rule (outputs to `deletion_detection/` directory)

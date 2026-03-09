@@ -172,7 +172,11 @@ def get_all_compare_outputs(wildcards):
 
 
 def get_all_outputs(wildcards):
-    return get_all_crispresso_outputs(wildcards) + get_all_compare_outputs(wildcards)
+    return (
+        get_all_crispresso_outputs(wildcards)
+        + get_all_compare_outputs(wildcards)
+        + ["crispresso/CRISPRessoAggregate_on_all"]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -272,3 +276,23 @@ rule crispresso_compare:
         "logs/{exp_name}_vs_{ctrl_name}.compare.log",
     wrapper:
         wrapper_path("CRISPR/crispresso-compare")
+
+
+rule crispresso_aggregate:
+    """Aggregate all CRISPResso runs into a single combined report.
+
+    Collects every CRISPResso_on_{sample_name} directory produced by the
+    crispresso rule and passes them to CRISPRessoAggregate, which produces a
+    unified HTML report and summary plots across all samples.
+    """
+    input:
+        crispresso_dirs = get_all_crispresso_outputs,
+    output:
+        directory("crispresso/CRISPRessoAggregate_on_all"),
+    params:
+        name = "all",
+    threads: 4
+    log:
+        "logs/aggregate.log",
+    wrapper:
+        wrapper_path("CRISPR/crispresso-aggregate")

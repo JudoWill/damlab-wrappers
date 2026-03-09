@@ -1,0 +1,67 @@
+from pathlib import Path
+
+TEST_ROOT_CRISPR__crispresso_aggregate = Path(workflow.snakefile).parent
+
+# Reuse test data from the crispresso-core test
+CORE_TEST_DATA = TEST_ROOT_CRISPR__crispresso_aggregate.parent.parent / "crispresso-core/test/test_data"
+
+
+rule test_CRISPR__crispresso_aggregate__all:
+    input:
+        files = [
+            TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPRessoAggregate_on_all_samples",
+        ],
+        tests = [TEST_ROOT_CRISPR__crispresso_aggregate / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/pytest.stderr.log",
+    shell: "cd {TEST_ROOT_CRISPR__crispresso_aggregate} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule CRISPR__crispresso_aggregate__make_run1:
+    """First CRISPResso run to feed into aggregate test."""
+    input:
+        fastq_r1 = CORE_TEST_DATA / "reads.fastq",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPResso_on_agg_sample1"),
+    params:
+        amplicon_seq = "GCAGTCCGAAGGCTTAGATCCTGCAGGTCGACAGATCCCCGGGTACCGAGCTCGAATTCGTTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCC",
+        guide_seq    = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/agg_run1.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_aggregate.parent.parent}/crispresso-core"
+
+
+rule CRISPR__crispresso_aggregate__make_run2:
+    """Second CRISPResso run to feed into aggregate test."""
+    input:
+        fastq_r1 = CORE_TEST_DATA / "reads.fastq",
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPResso_on_agg_sample2"),
+    params:
+        amplicon_seq = "GCAGTCCGAAGGCTTAGATCCTGCAGGTCGACAGATCCCCGGGTACCGAGCTCGAATTCGTTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCC",
+        guide_seq    = "TGCAGGTCGACAGATCCCCG",
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/agg_run2.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_aggregate.parent.parent}/crispresso-core"
+
+
+rule CRISPR__crispresso_aggregate__test_aggregate:
+    """Aggregate both CRISPResso test runs into a single report."""
+    input:
+        crispresso_dirs = [
+            TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPResso_on_agg_sample1",
+            TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPResso_on_agg_sample2",
+        ],
+    output:
+        directory(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/CRISPRessoAggregate_on_all_samples"),
+    threads: 1
+    log:
+        temp(TEST_ROOT_CRISPR__crispresso_aggregate / "test_output/aggregate.log"),
+    wrapper:
+        f"file:{TEST_ROOT_CRISPR__crispresso_aggregate.parent}"
