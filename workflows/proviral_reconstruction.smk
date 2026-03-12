@@ -53,6 +53,7 @@ samples.csv columns:
 
 import os
 import itertools
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -166,6 +167,13 @@ if HAS_TREE_GROUPS:
     TREE_GROUPS = SAMPLES["tree_group"].dropna().unique().tolist()
 else:
     TREE_GROUPS = []
+
+# Constrain sample_name to only match real sample names from the CSV.
+# Without this, Snakemake can resolve e.g. fastq/HC69.downsampled.fastq
+# via bam_to_fastq with sample_name=HC69.downsampled instead of using the
+# downsample rule with sample_name=HC69.
+wildcard_constraints:
+    sample_name = "|".join(re.escape(s) for s in SAMPLES["sample_name"].tolist()),
 
 # ---------------------------------------------------------------------------
 # Helper functions
