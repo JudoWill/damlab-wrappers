@@ -282,7 +282,8 @@ rule bam_to_fastq:
     output:
         fastq = "fastq/{sample_name}.fastq",
     params:
-        mapped_only = True,
+        mapped_only  = True,
+        primary_only = True,
     log:
         "logs/{sample_name}.bam2fastq.log",
     wrapper:

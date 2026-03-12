@@ -73,6 +73,7 @@ output_path = snakemake.output[0]
 
 # Get parameters
 mapped_only = snakemake.params.get("mapped_only", False)
+primary_only = snakemake.params.get("primary_only", False)
 region = snakemake.params.get("region")
 min_mapq = snakemake.params.get("min_mapq", 0)
 output_format_param = snakemake.params.get("output_format")
@@ -85,6 +86,8 @@ segment_stream = get_segment_stream(input_path, region, min_mapq)
 with open(output_path, "w") as f:
     for segment in segment_stream:
         if mapped_only and segment.is_unmapped:
+            continue
+        if primary_only and (segment.is_secondary or segment.is_supplementary):
             continue
         if not segment.query_sequence:
             continue

@@ -13,6 +13,7 @@ This wrapper converts BAM/SAM files to FASTA or FASTQ format using the cigarmath
 ## Parameters
 
 - `mapped_only` (bool, optional): If `True`, only output reads that are mapped. Default: `False`.
+- `primary_only` (bool, optional): If `True`, skip secondary (`is_secondary`) and supplementary (`is_supplementary`) alignments, retaining only primary alignments. Default: `False`.
 - `region` (str, optional): Genomic region to extract (e.g. `"chr1:1000-2000"` or `"chr1"`). For BAM files, requires an index (`.bai`). For SAM, region filtering is not supported.
 - `output_format` (str, optional): Override output format: `"fasta"` or `"fastq"`. By default, format is inferred from the output file extension.
 - `min_mapq` (int, optional): Minimum mapping quality. Default: `0`.
