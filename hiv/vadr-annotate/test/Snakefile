@@ -1,0 +1,47 @@
+TEST_ROOT_hiv__vadr_annotate = Path(workflow.snakefile).parent
+
+# ---------------------------------------------------------------------------
+# Build a minimal K03455 model library for testing (requires network access)
+# ---------------------------------------------------------------------------
+
+rule test_hiv__vadr_annotate__build_model:
+    output:
+        directory(TEST_ROOT_hiv__vadr_annotate / "test_model/K03455"),
+    conda: "env.yaml"
+    log:
+        temp(TEST_ROOT_hiv__vadr_annotate / "test_output/vadr_build.log"),
+    shell:
+        "v-build.pl K03455 {output} 2> {log}"
+
+# ---------------------------------------------------------------------------
+# Run the annotate wrapper on the bundled test FASTA
+# ---------------------------------------------------------------------------
+
+rule test_hiv__vadr_annotate:
+    input:
+        sequences = TEST_ROOT_hiv__vadr_annotate / "test_sequences.fa",
+        mdir      = TEST_ROOT_hiv__vadr_annotate / "test_model/K03455",
+    output:
+        directory(TEST_ROOT_hiv__vadr_annotate / "test_output/annotation"),
+    params:
+        noseqnamemax = True,
+    threads: 2
+    log:
+        temp(TEST_ROOT_hiv__vadr_annotate / "test_output/vadr_annotate.log"),
+    wrapper:
+        f"file:{TEST_ROOT_hiv__vadr_annotate.parent}"
+
+# ---------------------------------------------------------------------------
+# Run pytest after annotation completes
+# ---------------------------------------------------------------------------
+
+rule test_hiv__vadr_annotate__all:
+    input:
+        files = [TEST_ROOT_hiv__vadr_annotate / "test_output/annotation"],
+        tests = [TEST_ROOT_hiv__vadr_annotate / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_hiv__vadr_annotate / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_hiv__vadr_annotate / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT_hiv__vadr_annotate} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"

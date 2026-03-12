@@ -1,0 +1,29 @@
+TEST_ROOT_hiv__vadr_tbl2gbk = Path(workflow.snakefile).parent
+
+rule test_hiv__vadr_tbl2gbk__all:
+    input:
+        files = [
+            TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/test.gbf",
+            TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/test.sqn",
+        ],
+        tests = [TEST_ROOT_hiv__vadr_tbl2gbk / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT_hiv__vadr_tbl2gbk} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_hiv__vadr_tbl2gbk:
+    input:
+        sequences     = TEST_ROOT_hiv__vadr_tbl2gbk / "test_pass.fa",
+        feature_table = TEST_ROOT_hiv__vadr_tbl2gbk / "test_pass.tbl",
+    output:
+        gbf = TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/test.gbf",
+        sqn = TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/test.sqn",
+    params:
+        organism = "Human immunodeficiency virus 1",
+    log:
+        temp(TEST_ROOT_hiv__vadr_tbl2gbk / "test_output/tbl2gbk.log"),
+    wrapper:
+        f"file:{TEST_ROOT_hiv__vadr_tbl2gbk.parent}"

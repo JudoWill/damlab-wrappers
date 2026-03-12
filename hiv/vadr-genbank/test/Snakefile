@@ -1,0 +1,47 @@
+# Integration test for hiv/vadr-genbank
+#
+# Uses the K03455.gb and K03455.fasta files bundled in hiv/vadr-test/ as
+# representative NCBI downloads that contain version suffixes.
+#
+# Run from this directory:
+#   snakemake --use-conda --cores 1
+
+from pathlib import Path
+
+TEST_ROOT   = Path(workflow.snakefile).parent
+WRAPPER_ROOT = TEST_ROOT.parent.parent   # damlab-wrappers/hiv/
+VADR_TEST   = WRAPPER_ROOT / "vadr-test"
+
+
+def wrapper_path(subpath):
+    return f"file:{WRAPPER_ROOT}/{subpath}"
+
+
+ACCESSION = "K03455"
+
+rule all:
+    input:
+        genbank = TEST_ROOT / f"test_output/{ACCESSION}.gb",
+        fasta   = TEST_ROOT / f"test_output/{ACCESSION}.fasta",
+        tests   = TEST_ROOT / "tests.py",
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT} && pytest {input.tests} -v > {log.stdout} 2> {log.stderr}"
+
+
+rule vadr_genbank:
+    input:
+        genbank = VADR_TEST / f"{ACCESSION}.gb",
+        fasta   = VADR_TEST / f"{ACCESSION}.fasta",
+    output:
+        genbank = TEST_ROOT / f"test_output/{ACCESSION}.gb",
+        fasta   = TEST_ROOT / f"test_output/{ACCESSION}.fasta",
+    params:
+        accession = ACCESSION,
+    log:
+        TEST_ROOT / f"test_output/vadr_genbank_{ACCESSION}.log",
+    wrapper:
+        wrapper_path("vadr-genbank")

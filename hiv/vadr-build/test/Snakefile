@@ -1,0 +1,24 @@
+TEST_ROOT_hiv__vadr_build = Path(workflow.snakefile).parent
+
+rule test_hiv__vadr_build__all:
+    input:
+        files = [TEST_ROOT_hiv__vadr_build / "test_output/K03455"],
+        tests = [TEST_ROOT_hiv__vadr_build / "tests.py"],
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT_hiv__vadr_build / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT_hiv__vadr_build / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT_hiv__vadr_build} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+rule test_hiv__vadr_build:
+    output:
+        directory(TEST_ROOT_hiv__vadr_build / "test_output/K03455"),
+    params:
+        accession = "K03455",
+        group     = "HIV",
+        subgroup  = "HIV-1",
+    log:
+        temp(TEST_ROOT_hiv__vadr_build / "test_output/vadr_build.log"),
+    wrapper:
+        f"file:{TEST_ROOT_hiv__vadr_build.parent}"

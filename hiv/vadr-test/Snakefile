@@ -1,0 +1,151 @@
+# Integration test for the VADR annotation pipeline:
+#   vadr-genbank → vadr-build → vadr-annotate → vadr-tbl2gbk
+#
+# Two build modes are supported via the BUILD_MODE variable:
+#
+#   local  (default) — normalise the bundled K03455.gb / K03455.fasta files
+#                      with vadr-genbank, then pass them to vadr-build.
+#                      No network access required.
+#
+#   ncbi             — fetch each accession directly from GenBank at build time.
+#                      Requires internet access.
+#
+# Override on the command line:
+#   snakemake --use-conda --cores 4 --config build_mode=ncbi
+#
+# To test additional accessions (NCBI mode only), add them to ACCESSIONS below.
+
+from pathlib import Path
+
+TEST_ROOT    = Path(workflow.snakefile).parent
+WRAPPER_ROOT = TEST_ROOT.parent   # damlab-wrappers/hiv/
+
+BUILD_MODE = config.get("build_mode", "local")
+
+# Accessions used in ncbi mode (and as wildcard values in local mode)
+ACCESSIONS = [
+    "K03455",    # HIV-1 HXB2 reference
+    "AF324493",  # HIV-1 NL4-3
+]
+
+# In local mode only the bundled accession is available
+if BUILD_MODE == "local":
+    ACCESSIONS = ["K03455"]
+
+
+def wrapper_path(subpath):
+    return f"file:{WRAPPER_ROOT}/{subpath}"
+
+
+# ---------------------------------------------------------------------------
+# Top-level target
+# ---------------------------------------------------------------------------
+
+rule all:
+    input:
+        expand(TEST_ROOT / "test_output/model/{accession}",        accession=ACCESSIONS),
+        expand(TEST_ROOT / "test_output/{accession}/annotation",   accession=ACCESSIONS),
+        expand(TEST_ROOT / "test_output/{accession}/haplotypes.gbf", accession=ACCESSIONS),
+        tests = TEST_ROOT / "tests.py",
+    conda: "env.yaml"
+    log:
+        stdout = TEST_ROOT / "test_output/pytest.stdout.log",
+        stderr = TEST_ROOT / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT} && pytest {input.tests} -v > {log.stdout} 2> {log.stderr}"
+
+
+# ---------------------------------------------------------------------------
+# Step 1a — normalise local GenBank / FASTA files (local mode only)
+# ---------------------------------------------------------------------------
+
+if BUILD_MODE == "local":
+    rule vadr_genbank:
+        """Strip NCBI version suffixes from local GenBank and FASTA files."""
+        input:
+            genbank = TEST_ROOT / "{accession}.gb",
+            fasta   = TEST_ROOT / "{accession}.fasta",
+        output:
+            genbank = TEST_ROOT / "test_output/normalised/{accession}.gb",
+            fasta   = TEST_ROOT / "test_output/normalised/{accession}.fasta",
+        params:
+            accession = lambda wc: wc.accession,
+        log:
+            TEST_ROOT / "test_output/vadr_genbank_{accession}.log",
+        wrapper:
+            wrapper_path("vadr-genbank")
+
+
+# ---------------------------------------------------------------------------
+# Step 1b — build VADR model
+# ---------------------------------------------------------------------------
+
+if BUILD_MODE == "local":
+    rule vadr_build:
+        """Build a VADR homology model from normalised local files."""
+        input:
+            genbank = TEST_ROOT / "test_output/normalised/{accession}.gb",
+            fasta   = TEST_ROOT / "test_output/normalised/{accession}.fasta",
+        output:
+            directory(TEST_ROOT / "test_output/model/{accession}"),
+        params:
+            accession = lambda wc: wc.accession,
+            group     = "HIV",
+            subgroup  = "HIV-1",
+        log:
+            TEST_ROOT / "test_output/vadr_build_{accession}.log",
+        wrapper:
+            wrapper_path("vadr-build")
+else:
+    rule vadr_build:
+        """Build a VADR homology model by fetching {wildcards.accession} from GenBank."""
+        output:
+            directory(TEST_ROOT / "test_output/model/{accession}"),
+        params:
+            accession = lambda wc: wc.accession,
+            group     = "HIV",
+            subgroup  = "HIV-1",
+        log:
+            TEST_ROOT / "test_output/vadr_build_{accession}.log",
+        wrapper:
+            wrapper_path("vadr-build")
+
+
+# ---------------------------------------------------------------------------
+# Step 2 — annotate haplotypes against each model
+# ---------------------------------------------------------------------------
+
+rule vadr_annotate:
+    """Classify and annotate test haplotypes using the {wildcards.accession} VADR model."""
+    input:
+        sequences = TEST_ROOT / "haplotypes.fa",
+        mdir      = TEST_ROOT / "test_output/model/{accession}",
+    output:
+        directory(TEST_ROOT / "test_output/{accession}/annotation"),
+    params:
+        mode         = "hiv",
+        noseqnamemax = True,
+    threads: 4
+    log:
+        TEST_ROOT / "test_output/vadr_annotate_{accession}.log",
+    wrapper:
+        wrapper_path("vadr-annotate")
+
+
+# ---------------------------------------------------------------------------
+# Step 3 — convert passing sequences + feature table to GenBank format
+# ---------------------------------------------------------------------------
+
+rule vadr_tbl2gbk:
+    """Convert VADR passing haplotypes and their feature table to GenBank format."""
+    input:
+        vadr_dir = TEST_ROOT / "test_output/{accession}/annotation",
+    output:
+        gbf = TEST_ROOT / "test_output/{accession}/haplotypes.gbf",
+        sqn = TEST_ROOT / "test_output/{accession}/haplotypes.sqn",
+    params:
+        organism = "Human immunodeficiency virus 1",
+    log:
+        TEST_ROOT / "test_output/vadr_tbl2gbk_{accession}.log",
+    wrapper:
+        wrapper_path("vadr-tbl2gbk")
