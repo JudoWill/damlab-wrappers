@@ -61,6 +61,28 @@ A complete end-to-end pipeline for processing Nanopore sequencing data from POD5
 snakemake --snakefile workflows/proviral_nfl.smk --cores 8 --use-conda
 ```
 
+### Proviral Reconstruction Pipeline
+
+Reconstructs proviral haplotypes from long-read Nanopore data using Strainline,
+with optional downsampling, VADR viral annotation, GenBank file generation, and
+per-cohort phylogenetic trees.
+
+**Features:**
+- FASTQ or BAM input (BAM auto-converted via `cigarmath/bam2fastx`)
+- Optional read downsampling with filtlong
+- Haplotype reconstruction and reference-based clipping with Strainline
+- Three VADR annotation modes: pre-built model, NCBI fetch, or fully offline local files
+- GenBank flat file and ASN.1 submission file generation per sample
+- Optional per-cohort MSA (MUSCLE) → FastTree → phytreeviz phylogenetic trees
+
+**Documentation:** [`workflows/proviral_reconstruction.md`](workflows/proviral_reconstruction.md)
+
+**Quick Start:**
+```bash
+# Create samples.csv and run.meta.yaml, then run:
+snakemake -s workflows/proviral_reconstruction.smk --use-conda --cores 8
+```
+
 ### Proviral CRISPR Pipeline
 
 An automation pipeline for CRISPResso2 CRISPR editing analysis. Accepts reads
@@ -112,6 +134,15 @@ This package contains wrappers for CRISPR editing analysis tools.
  - [`CRISPR/crispresso-compare`](CRISPR/crispresso-compare/README.md) : CRISPRessoCompare pairwise comparison of two CRISPResso output directories (e.g. treated vs. control).
  - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) : CRISPRessoAggregate multi-run aggregation into a single combined HTML report and summary plots.
  - [`CRISPR/crispresso-aggregate`](CRISPR/crispresso-aggregate/README.md) : CRISPRessoAggregate multi-run aggregation into a single combined report. Accepts any number of CRISPResso output directories.
+
+## HIV / Viral annotation
+
+This package contains wrappers for VADR viral annotation and related tools.
+
+ - [`hiv/vadr-genbank`](hiv/vadr-genbank/README.md) : Normalise NCBI GenBank flat files and FASTA files for use with `v-build.pl`. Rewrites the LOCUS name and strips VERSION suffixes so VADR's accession-matching checks pass.
+ - [`hiv/vadr-build`](hiv/vadr-build/README.md) : Build a VADR homology model from a GenBank accession. Supports NCBI fetch (online) or local file inputs (offline, via `hiv/vadr-genbank`).
+ - [`hiv/vadr-annotate`](hiv/vadr-annotate/README.md) : Annotate viral sequences using a VADR model directory. Includes `mode='hiv'` to pre-configure `--alt_pass` for all recoverable HIV alert codes.
+ - [`hiv/vadr-tbl2gbk`](hiv/vadr-tbl2gbk/README.md) : Convert VADR's passing FASTA and NCBI 5-column feature table to an annotated GenBank flat file (`.gbf`) and ASN.1 submission file (`.sqn`) via `table2asn`.
 
 ## Multiple sequence alignment
 
