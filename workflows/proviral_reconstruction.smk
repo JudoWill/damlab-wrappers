@@ -223,15 +223,18 @@ def get_strainline_input(wildcards):
     return get_reads_input(wildcards)
 
 
-def get_bam2fastq_length_params(wildcards):
-    """Return min/max query length params for bam_to_fastq from optional CSV columns."""
+def get_bam2fastq_min_query_length_param(wildcards):
+    """Return min query length params for bam_to_fastq from optional CSV columns."""
     row = get_sample(wildcards)
-    params = {}
     if "min_query_length" in SAMPLES.columns and _notna(row.get("min_query_length")):
-        params["min_query_length"] = int(row["min_query_length"])
+        return int(row["min_query_length"])
+
+
+def get_bam2fastq_max_query_length_param(wildcards):
+    """Return max query length params for bam_to_fastq from optional CSV columns."""
+    row = get_sample(wildcards)
     if "max_query_length" in SAMPLES.columns and _notna(row.get("max_query_length")):
-        params["max_query_length"] = int(row["max_query_length"])
-    return params
+        return int(row["max_query_length"])
 
 
 def get_samples_in_group(group):
@@ -300,7 +303,8 @@ rule bam_to_fastq:
         mapped_only      = True,
         primary_only     = True,
         unique_only      = True,
-        **get_bam2fastq_length_params,
+        min_query_length = get_bam2fastq_min_query_length_param,
+        max_query_length = get_bam2fastq_max_query_length_param
     log:
         "logs/{sample_name}.bam2fastq.log",
     wrapper:
