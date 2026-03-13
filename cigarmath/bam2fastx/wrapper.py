@@ -72,9 +72,11 @@ input_path = snakemake.input[0]
 output_path = snakemake.output[0]
 
 # Get parameters
-mapped_only  = snakemake.params.get("mapped_only", False)
-primary_only = snakemake.params.get("primary_only", False)
-unique_only  = snakemake.params.get("unique_only", False)
+mapped_only      = snakemake.params.get("mapped_only", False)
+primary_only     = snakemake.params.get("primary_only", False)
+unique_only      = snakemake.params.get("unique_only", False)
+min_query_length = snakemake.params.get("min_query_length")
+max_query_length = snakemake.params.get("max_query_length")
 region = snakemake.params.get("region")
 min_mapq = snakemake.params.get("min_mapq", 0)
 output_format_param = snakemake.params.get("output_format")
@@ -93,6 +95,11 @@ with open(output_path, "w") as f:
         if primary_only and (segment.is_secondary or segment.is_supplementary):
             continue
         if not segment.query_sequence:
+            continue
+        seq_len = len(segment.query_sequence)
+        if min_query_length is not None and seq_len < min_query_length:
+            continue
+        if max_query_length is not None and seq_len > max_query_length:
             continue
         if unique_only:
             if segment.query_name in seen_names:
