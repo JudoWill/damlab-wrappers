@@ -90,9 +90,10 @@ def get_all_strainline_split_outputs(wildcards):
     checkpoint_output = checkpoints.split_by_deletion_pattern.get(
         sample=wildcards.sample
     ).output[0]
-    categories = glob_wildcards(
-        join(checkpoint_output, "{category}.fa")
-    ).category
+    categories = [
+        c for c in glob_wildcards(
+            join(checkpoint_output, "{category}.fa")
+        ).category
         if c != 'unclassified'
     ]
 
