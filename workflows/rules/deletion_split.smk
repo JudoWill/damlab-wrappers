@@ -58,8 +58,8 @@ rule namesort_for_deletion_split:
         temp('deletion_split/{sample}.namesorted.bam')
     log:
         'deletion_split/{sample}.namesort.log'
-    shell:
-        'samtools sort -n -o {output} {input} > {log} 2>&1'
+    wrapper:
+        f"{SNAKEMAKE_WRAPPER_TAG}/bio/samtools/collate"
 
 
 checkpoint split_by_deletion_pattern:
