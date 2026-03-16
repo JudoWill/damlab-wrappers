@@ -23,6 +23,7 @@ properties:
           - hiv-targeted
           - siv-nfl
           - siv-nfl-umi
+          - siv-exa-umi
         
     pcr_initials:
         type: string
