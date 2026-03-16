@@ -242,14 +242,28 @@ def make_output_handle(category: str, output_dir: str, output_format: str, heade
     return open(path, "w")
 
 
+def _primary_segment(segments: List):
+    """Return the primary alignment from a group, falling back to the first segment
+    with a non-empty sequence.  Returns None if no usable segment is found."""
+    # Prefer a non-secondary, non-supplementary segment with sequence
+    for seg in segments:
+        if not seg.is_secondary and not seg.is_supplementary and seg.query_sequence:
+            return seg
+    # Fall back to any segment with sequence
+    for seg in segments:
+        if seg.query_sequence:
+            return seg
+    return None
+
+
 def write_record(handle, segments: List, output_format: str) -> None:
     """Write a read group to the appropriate output handle."""
     if output_format in ("bam", "sam"):
         for seg in segments:
             handle.write(seg)
     else:
-        seg = segments[0]
-        if not seg.query_sequence:
+        seg = _primary_segment(segments)
+        if seg is None:
             return
         name = seg.query_name
         seq = seg.query_sequence
