@@ -107,7 +107,7 @@ rule strainline_per_deletion:
     log:
         'strainline_split/{sample}/{category}.strainline.log'
     wrapper:
-        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/strainline/strainline/"
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/strainline/strainline/"
 
 
 rule all_deletion_split_strainline:
