@@ -9,6 +9,7 @@ rule deletion_block_detection:
         summary='deletion_detection/{sample}.deletion_summary.yaml'
     params:
         min_deletion_size=config.get('MIN_DELETION_SIZE', 50),
+        merge_distance=config.get('DELETION_MERGE_DISTANCE', 10),
         sample_name=lambda wildcards: wildcards.sample
     log:
         'deletion_detection/{sample}.deletion_detection.log'

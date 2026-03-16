@@ -4,7 +4,7 @@ A wrapper for detecting deletion blocks from BAM files using the cigarmath libra
 
 ## Version
 
-Current version: 1.0.0 (First stable release)
+Current version: 1.1.0
 
 For a detailed list of changes, see the [CHANGELOG.md](CHANGELOG.md).
 
@@ -64,9 +64,30 @@ rule detect_deletion_blocks:
         "file:path/to/damlab-wrappers/cigarmath/deletion_block_detection"
 ```
 
+### With Block Merging
+
+Use `merge_distance` to collapse deletion blocks whose start and end positions are within a given number of bases of each other. This is useful for grouping sequencing-noise variants of the same underlying deletion into a single representative entry.
+
+```python
+rule detect_deletion_blocks:
+    input:
+        bams="sorted.bam"
+    output:
+        reads="deletion_reads.csv",
+        deletions="deletion_blocks.csv",
+        summary="deletion_summary.yaml"
+    params:
+        min_deletion_size=50,
+        merge_distance=10,
+        sample_name="patient1"
+    wrapper:
+        "file:path/to/damlab-wrappers/cigarmath/deletion_block_detection"
+```
+
 ## Parameters
 
 - `min_deletion_size` (int, optional): Minimum size of deletions to detect. Defaults to 50.
+- `merge_distance` (int, optional): Maximum coordinate distance (in bases) between two deletion blocks' starts **and** ends for them to be merged into a single representative block. The representative is chosen as the block with the highest read count. Set to 0 (default) to disable merging.
 - `sample_name` (str, optional): Sample name to include in metrics. Defaults to "sample".
 
 ## Input
@@ -87,9 +108,11 @@ Contains one row per read with deletion information:
 | `reference_end` | End position of alignment on reference |
 | `deletions` | Semicolon-separated list of deletions in format `start-end` |
 
+When `merge_distance > 0`, deletion coordinates in this file are remapped to their representative (merged) block coordinates.
+
 ### Deletion-centered CSV (`deletions`)
 
-Contains one row per unique deletion:
+Contains one row per unique deletion (or merged representative when `merge_distance > 0`):
 
 | Column | Description |
 |--------|-------------|
@@ -106,13 +129,28 @@ Contains summary statistics for MultiQC integration:
 - `sample_name`: Sample identifier
 - `total_reads`: Total number of reads processed
 - `reads_with_deletions`: Number of reads containing at least one deletion
-- `unique_deletion_count`: Number of unique deletion blocks found
+- `unique_deletion_count`: Number of unique deletion blocks found (after any merging)
 - `total_deletion_count`: Total number of deletions across all reads
 - `deletion_frequency`: Fraction of reads with deletions
+- `deletion_richness`: Number of distinct deletion blocks (equivalent to `unique_deletion_count`)
+- `deletion_shannon_entropy`: Shannon entropy (nats) of the deletion frequency distribution — higher values indicate a more even spread across many deletion types
 - `min_deletion_size`: Minimum deletion size threshold used
+- `merge_distance`: Block-merging distance threshold used
 - `input_bam_count`: Number of input BAM files processed
 - `allowedlist_used`: Whether an allowedlist filter was applied
 - `allowedlist_size`: Number of deletions in allowedlist (if used)
+
+#### Diversity metrics
+
+`deletion_richness` is the raw count of distinct deletion blocks and reflects how many different deletion events are present.
+
+`deletion_shannon_entropy` (H) is calculated as:
+
+```
+H = -Σ p_i * ln(p_i)
+```
+
+where p_i is the proportion of all deletion observations belonging to block i. H = 0 when all reads share the same single deletion; H increases as deletions are distributed more evenly across more distinct blocks.
 
 ## Allowedlist Format
 

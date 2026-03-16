@@ -205,6 +205,7 @@ demuxed_bam_path: /path/to/bam   # Skip basecalling, use pre-demuxed BAM
 # Analysis options
 STRAINLINE_PREFIX: /path/to/strainline  # Path to strainline installation
 MIN_DELETION_SIZE: 50                    # Minimum deletion size to detect (default: 50)
+DELETION_MERGE_DISTANCE: 10              # Max coordinate distance to merge similar deletion blocks (default: 10)
 ```
 
 ### Samples CSV Format
