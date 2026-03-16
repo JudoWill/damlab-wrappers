@@ -112,7 +112,7 @@ rule strainline_per_deletion:
         haplotypes='strainline_split/{sample}/{category}.haplotypes.fa'
     params:
         prefix=config.get('STRAINLINE_PREFIX', join(WORKFLOW_DIR, '../strainline/venv')),
-        extra_params = '--minTrimmedLen 250 --minOvlpLen 250 --minSeedLen 500'
+        extra_params = '--minTrimmedLen 250 --minOvlpLen 250 --minSeedLen 500',
         platform='ont'
     threads: 4
     log:
