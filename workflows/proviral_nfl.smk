@@ -28,6 +28,7 @@ include: join(WORKFLOW_DIR, "rules/alignment.smk")
 include: join(WORKFLOW_DIR, "rules/metrics.smk")
 #include: join(WORKFLOW_DIR, "rules/strainline.smk")
 include: join(WORKFLOW_DIR, "rules/deletion_detection.smk")
+include: join(WORKFLOW_DIR, "rules/deletion_split.smk")
 include: join(WORKFLOW_DIR, "rules/reporting.smk")
 
 def get_final_bam_paths(wildcards):
@@ -51,6 +52,11 @@ def get_all_outputs(wildcards):
     # Add deletion detection outputs
     for sample in get_all_samples():
         outputs.append(f'deletion_detection/{sample}.deletion_summary.yaml')
+
+    # Add per-deletion Strainline outputs
+    for sample in get_all_samples():
+        outputs.append(f'strainline_split/{sample}.done')
+
     return outputs
 
 # Determine input mode
