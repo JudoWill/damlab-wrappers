@@ -14,6 +14,13 @@ DL_PREFIX = config.get("damlab_prefix", join(WORKFLOW_DIR, "../../damlab-wrapper
 # Load samples CSV
 SAMPLES = pd.read_csv(config.get('samples_csv', 'samples.csv'))
 
+# Prevent {sample} from matching intermediate filenames that contain dots,
+# which would cause PeriodicWildcardError between namesort_for_deletion_split
+# (deletion_split/{sample}.namesorted.bam) and the checkpoint output directory
+# (deletion_split/{sample}/).
+wildcard_constraints:
+    sample=r'[A-Za-z0-9_\-]+'
+
 # Include schema validation
 include: join(WORKFLOW_DIR, "schemas", "validate.smk")
 
