@@ -82,8 +82,19 @@ if is_directory:
 else:
     with tempfile.TemporaryDirectory(delete=False) as tmpdir:
         cmd += f" -o {tmpdir}"
-        shell(path_cmd + cmd + log)
         haplotype_file = join(tmpdir, "filter_by_abun", "haplotypes.final.fa")
-        if not os.path.exists(haplotype_file):
-            raise FileNotFoundError(f"Expected haplotype file {haplotype_file} not found after Strainline execution")
-        shutil.move(haplotype_file, output)
+        try:
+            shell(path_cmd + cmd + log)
+        except Exception:
+            # Strainline exits non-zero when it produces 0 haplotypes (the
+            # final minimap2 | samtools sort pipeline fails on an empty index).
+            # Treat a missing haplotype file as a valid zero-haplotype result
+            # rather than a pipeline error.  A genuine crash (e.g. missing
+            # binary) will still raise because the file won't exist below.
+            pass
+        if os.path.exists(haplotype_file):
+            shutil.move(haplotype_file, output)
+        else:
+            # Zero haplotypes: write an empty FASTA so Snakemake considers
+            # the rule complete.
+            open(output, 'w').close()

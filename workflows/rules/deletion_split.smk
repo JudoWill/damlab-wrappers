@@ -80,13 +80,22 @@ checkpoint split_by_deletion_pattern:
 
 
 def get_all_strainline_split_outputs(wildcards):
-    """Return all strainline haplotype outputs for a sample after the checkpoint."""
+    """Return all strainline haplotype outputs for a sample after the checkpoint.
+
+    The 'unclassified' category is excluded: it contains reads that were not
+    in the split CSV (non-NFL short/partial reads) and will cause Strainline
+    to hang or time out when the seed read is much shorter than a full-length
+    genome.
+    """
     checkpoint_output = checkpoints.split_by_deletion_pattern.get(
         sample=wildcards.sample
     ).output[0]
-    categories = glob_wildcards(
-        join(checkpoint_output, "{category}.fasta")
-    ).category
+    categories = [
+        c for c in glob_wildcards(
+            join(checkpoint_output, "{category}.fasta")
+        ).category
+        if c != 'unclassified'
+    ]
     return expand(
         'strainline_split/{sample}/{category}.haplotypes.fa',
         sample=wildcards.sample,
