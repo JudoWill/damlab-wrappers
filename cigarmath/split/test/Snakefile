@@ -1,0 +1,165 @@
+from pathlib import Path
+
+TEST_ROOT_cigarmath__SPLIT = Path(workflow.snakefile).parent
+
+
+rule test_cigarmath__SPLIT__all:
+    input:
+        files=[
+            TEST_ROOT_cigarmath__SPLIT / "test_output/flag_bam/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/flag_bam_summary.yaml",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/size_fastq/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/size_fastq_summary.yaml",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/overlap_fasta/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/overlap_fasta_summary.yaml",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/top_n_fastq/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/top_n_fastq_summary.yaml",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/toy_csv_fasta/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/toy_csv_fasta_summary.yaml",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/toy_tag_bam/",
+            TEST_ROOT_cigarmath__SPLIT / "test_output/toy_tag_bam_summary.yaml",
+        ],
+        tests=[TEST_ROOT_cigarmath__SPLIT / "tests.py"],
+    conda:
+        "env.yaml"
+    log:
+        stdout=TEST_ROOT_cigarmath__SPLIT / "test_output/pytest.stdout.log",
+        stderr=TEST_ROOT_cigarmath__SPLIT / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT_cigarmath__SPLIT} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+# ---------------------------------------------------------------------------
+# Split by flag — coord-sorted test.bam, BAM output
+# ---------------------------------------------------------------------------
+rule test_split__flag_bam:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/test.bam",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/flag_bam/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/flag_bam_summary.yaml",
+    params:
+        split_by="flag",
+        flag_categories={"suppl": {"is_supplementary": True}, "primary": {"is_supplementary": False}},
+        output_format="bam",
+        sample_name="test",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Split by query_size — coord-sorted test.bam, FASTQ output
+# ---------------------------------------------------------------------------
+rule test_split__size_fastq:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/test.bam",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/size_fastq/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/size_fastq_summary.yaml",
+    params:
+        split_by="query_size",
+        size_bins={"short": [0, 150], "long": [150, None]},
+        output_format="fastq",
+        sample_name="test",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Split by flag + required_reference_overlap — coord-sorted test.bam, FASTA output
+# ---------------------------------------------------------------------------
+rule test_split__overlap_fasta:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/test.bam",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/overlap_fasta/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/overlap_fasta_summary.yaml",
+    params:
+        split_by="flag",
+        flag_categories={"suppl": {"is_supplementary": True}, "primary": {"is_supplementary": False}},
+        required_reference_overlap=["HXB2F:3000-4000"],
+        output_format="fasta",
+        sample_name="test",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Split by flag with top_n=1 — coord-sorted test.bam, FASTQ output
+# ---------------------------------------------------------------------------
+rule test_split__top_n:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/test.bam",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/top_n_fastq/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/top_n_fastq_summary.yaml",
+    params:
+        split_by="flag",
+        flag_categories={"suppl": {"is_supplementary": True}, "primary": {"is_supplementary": False}},
+        output_format="fastq",
+        top_n=1,
+        sample_name="test",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Split by CSV — toy name-sorted SAM, FASTA output
+# ---------------------------------------------------------------------------
+rule test_split__toy_csv:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/toy_namesorted.bam",
+        csv_file=TEST_ROOT_cigarmath__SPLIT / "toy_csv.csv",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/toy_csv_fasta/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/toy_csv_fasta_summary.yaml",
+    params:
+        split_by="csv",
+        output_format="fasta",
+        sample_name="toy",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Split by HP tag + required_reference_overlap — toy name-sorted SAM, BAM output
+# ---------------------------------------------------------------------------
+rule test_split__toy_tag:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "test_output/toy_namesorted.bam",
+    output:
+        directory(TEST_ROOT_cigarmath__SPLIT / "test_output/toy_tag_bam/"),
+        TEST_ROOT_cigarmath__SPLIT / "test_output/toy_tag_bam_summary.yaml",
+    params:
+        split_by="tag",
+        tag_name="HP",
+        required_reference_overlap=["HXB2F:3000-3020"],
+        output_format="bam",
+        sample_name="toy",
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__SPLIT.parent}"
+
+
+# ---------------------------------------------------------------------------
+# Prep rules — convert SAM inputs to BAM
+# ---------------------------------------------------------------------------
+rule test_split__sort_test_bam:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "../../test_data/test.sam"
+    output:
+        temp(TEST_ROOT_cigarmath__SPLIT / "test_output/test.bam")
+    params:
+        extra=""
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort"
+
+
+rule test_split__sort_toy_bam:
+    input:
+        TEST_ROOT_cigarmath__SPLIT / "toy_namesorted.sam"
+    output:
+        temp(TEST_ROOT_cigarmath__SPLIT / "test_output/toy_namesorted.bam")
+    params:
+        extra="-n"
+    wrapper:
+        f"{WRAPPER_VERSION}/bio/samtools/sort"

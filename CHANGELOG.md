@@ -30,6 +30,7 @@ Collect wrapper level changes here until merged.
   - Analysis outputs now included in MultiQC report
   - New config options: `STRAINLINE_PREFIX`, `MIN_DELETION_SIZE`, `DELETION_MERGE_DISTANCE`
   - `workflows/proviral_nfl` - Added `DELETION_MERGE_DISTANCE` config option (default: 10) to control merging of deletion blocks with similar endpoints in the deletion detection step
+  - [`cigarmath/split`](cigarmath/split/README.md) [1.0.0] - New wrapper for splitting a SAM/BAM file into multiple output files by flag attributes, auxiliary tag value, BED region overlap, query size, or CSV query-name mapping. Supports `required_reference_overlap` pre-filtering, `top_n` categorical selection, name-sorted BAM detection with combined supplementary alignment handling, and output in FASTA, FASTQ, SAM, or BAM format with propagated headers and PG lines.
 
 ## [0.0.2] - 2025-05-19
 
