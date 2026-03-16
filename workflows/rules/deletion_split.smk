@@ -80,13 +80,22 @@ checkpoint split_by_deletion_pattern:
 
 
 def get_all_strainline_split_outputs(wildcards):
-    """Return all strainline haplotype outputs for a sample after the checkpoint."""
+    """Return all strainline haplotype outputs for a sample after the checkpoint.
+
+    The 'unclassified' category is excluded: it contains reads that were not
+    in the split CSV (non-NFL short/partial reads) and will cause Strainline
+    to hang or time out when the seed read is much shorter than a full-length
+    genome.
+    """
     checkpoint_output = checkpoints.split_by_deletion_pattern.get(
         sample=wildcards.sample
     ).output[0]
     categories = glob_wildcards(
         join(checkpoint_output, "{category}.fa")
     ).category
+        if c != 'unclassified'
+    ]
+
     return expand(
         'strainline_split/{sample}/{category}.haplotypes.fa',
         sample=wildcards.sample,
@@ -110,9 +119,27 @@ rule strainline_per_deletion:
         "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/strainline/strainline/"
 
 
-rule all_deletion_split_strainline:
-    """Aggregate all per-deletion Strainline outputs for a sample."""
+rule concatenate_haplotypes_for_msa:
+    """Concatenate the reference and all per-deletion haplotypes into a single FASTA."""
     input:
-        get_all_strainline_split_outputs
+        haplotypes=get_all_strainline_split_outputs,
+        reference=get_reference_index
     output:
-        touch('strainline_split/{sample}.done')
+        'strainline_split/{sample}.pre_msa.fasta'
+    log:
+        'strainline_split/{sample}.pre_msa.log'
+    shell:
+        'cat {input.reference} {input.haplotypes} > {output} 2> {log}'
+
+
+rule muscle_deletion_msa:
+    """Align reference + all haplotypes with MUSCLE."""
+    input:
+        'strainline_split/{sample}.pre_msa.fasta'
+    output:
+        'strainline_split/{sample}.msa.fasta'
+    threads: 4
+    log:
+        'strainline_split/{sample}.msa.log'
+    wrapper:
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/MSA/muscle/"
