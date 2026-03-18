@@ -1,13 +1,9 @@
-# Deletion-pattern split + per-deletion Strainline rules
+# Deletion-pattern split + per-deletion samtools consensus rules
 from os.path import join
 
-HAS_DOWNSAMPLE = 'FILTLONG_TARGET_BASES' in config
 
-
-def get_deletion_fasta(wildcards):
-    if HAS_DOWNSAMPLE:
-        return f'deletion_split/{wildcards.sample}/{wildcards.category}.downsampled.fa'
-    return f'deletion_split/{wildcards.sample}/{wildcards.category}.fa'
+def get_deletion_bam(wildcards):
+    return f'consensus_split/{wildcards.sample}/{wildcards.category}.sorted.bam'
 
 
 rule prepare_deletion_split_csv:
@@ -71,7 +67,7 @@ rule namesort_for_deletion_split:
 
 
 checkpoint split_by_deletion_pattern:
-    """Split name-sorted BAM into per-deletion-pattern FASTA files."""
+    """Split name-sorted BAM into per-deletion-pattern BAM files."""
     input:
         bam='deletion_split/{sample}.namesorted.bam',
         csv_file='deletion_split/{sample}.split_labels.csv'
@@ -79,7 +75,7 @@ checkpoint split_by_deletion_pattern:
         directory('deletion_split/{sample}/')
     params:
         split_by='csv',
-        output_format='fasta',
+        output_format='bam',
         sample_name=lambda wildcards: wildcards.sample
     log:
         'deletion_split/{sample}.split.log'
@@ -87,103 +83,77 @@ checkpoint split_by_deletion_pattern:
         "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/cigarmath/split/"
 
 
-if HAS_DOWNSAMPLE:
-    _filtlong_extra = (
-        f"--assembly {config['FILTLONG_ASSEMBLY']}"
-        if config.get('FILTLONG_ASSEMBLY') else ""
-    )
-
-    rule downsample_deletion_split:
-        """Downsample each per-deletion FASTA with filtlong before Strainline."""
-        input:
-            reads='deletion_split/{sample}/{category}.fa'
-        output:
-            temp('deletion_split/{sample}/{category}.downsampled.fastq')
-        params:
-            target_bases=config['FILTLONG_TARGET_BASES'],
-            extra=_filtlong_extra
-        log:
-            'deletion_split/{sample}/{category}.filtlong.log'
-        wrapper:
-            f"{SNAKEMAKE_WRAPPER_TAG}/bio/filtlong"
-
-    rule fq2fa_deletion_split:
-        """Convert downsampled FASTQ back to FASTA for Strainline."""
-        input:
-            'deletion_split/{sample}/{category}.downsampled.fastq'
-        output:
-            'deletion_split/{sample}/{category}.downsampled.fa'
-        params:
-            command='fq2fa'
-        log:
-            'deletion_split/{sample}/{category}.fq2fa.log'
-        wrapper:
-            f"{SNAKEMAKE_WRAPPER_TAG}/bio/seqkit"
+rule sort_deletion_bam:
+    """Coordinate-sort each per-deletion BAM for samtools consensus."""
+    input:
+        'deletion_split/{sample}/{category}.bam'
+    output:
+        temp('consensus_split/{sample}/{category}.sorted.bam')
+    log:
+        'consensus_split/{sample}/{category}.sort.log'
+    wrapper:
+        f"{SNAKEMAKE_WRAPPER_TAG}/bio/samtools/sort"
 
 
-def get_all_strainline_split_outputs(wildcards):
-    """Return all strainline haplotype outputs for a sample after the checkpoint.
+def get_all_consensus_outputs(wildcards):
+    """Return all samtools consensus outputs for a sample after the checkpoint.
 
     The 'unclassified' category is excluded: it contains reads that were not
-    in the split CSV (non-NFL short/partial reads) and will cause Strainline
-    to hang or time out when the seed read is much shorter than a full-length
-    genome.
+    in the split CSV (non-NFL short/partial reads).
     """
     checkpoint_output = checkpoints.split_by_deletion_pattern.get(
         sample=wildcards.sample
     ).output[0]
     categories = [
         c for c in glob_wildcards(
-            join(checkpoint_output, "{category}.fa")
+            join(checkpoint_output, "{category}.bam")
         ).category
         if c != 'unclassified'
     ]
 
     return expand(
-        'strainline_split/{sample}/{category}.haplotypes.fa',
+        'consensus_split/{sample}/{category}.consensus.fa',
         sample=wildcards.sample,
         category=categories
     )
 
 
-rule strainline_per_deletion:
-    """Run Strainline haplotype reconstruction on each deletion-pattern FASTA."""
+rule samtools_consensus_per_deletion:
+    """Run samtools consensus on each deletion-pattern BAM."""
     input:
-        get_deletion_fasta
+        get_deletion_bam
     output:
-        haplotypes='strainline_split/{sample}/{category}.haplotypes.fa'
+        consensus='consensus_split/{sample}/{category}.consensus.fa'
     params:
-        prefix=config.get('STRAINLINE_PREFIX', join(WORKFLOW_DIR, '../strainline/venv')),
-        extra_params = '--minTrimmedLen 250 --minOvlpLen 250 --minSeedLen 500',
-        platform='ont'
+        mode='bayesian'
     threads: 4
     log:
-        'strainline_split/{sample}/{category}.strainline.log'
+        'consensus_split/{sample}/{category}.consensus.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/strainline/strainline/"
+        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/consensus/"
 
 
 rule concatenate_haplotypes_for_msa:
-    """Concatenate the reference and all per-deletion haplotypes into a single FASTA."""
+    """Concatenate the reference and all per-deletion consensus sequences into a single FASTA."""
     input:
-        haplotypes=get_all_strainline_split_outputs,
+        haplotypes=get_all_consensus_outputs,
         reference=get_reference_index
     output:
-        'strainline_split/{sample}.pre_msa.fasta'
+        'consensus_split/{sample}.pre_msa.fasta'
     log:
-        'strainline_split/{sample}.pre_msa.log'
+        'consensus_split/{sample}.pre_msa.log'
     shell:
         'cat {input.reference} {input.haplotypes} > {output} 2> {log}'
 
 
 rule muscle_deletion_msa:
-    """Align reference + all haplotypes with MUSCLE."""
+    """Align reference + all consensus sequences with MUSCLE."""
     input:
-        'strainline_split/{sample}.pre_msa.fasta'
+        'consensus_split/{sample}.pre_msa.fasta'
     output:
-        'strainline_split/{sample}.msa.fasta'
+        'consensus_split/{sample}.msa.fasta'
     threads: 4
     log:
-        'strainline_split/{sample}.msa.log'
+        'consensus_split/{sample}.msa.log'
     wrapper:
         "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/MSA/muscle/"

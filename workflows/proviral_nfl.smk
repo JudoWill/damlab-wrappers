@@ -60,9 +60,9 @@ def get_all_outputs(wildcards):
     for sample in get_all_samples():
         outputs.append(f'deletion_detection/{sample}.deletion_summary.yaml')
 
-    # Add per-deletion Strainline + MSA outputs
+    # Add per-deletion consensus + MSA outputs
     for sample in get_all_samples():
-        outputs.append(f'strainline_split/{sample}.msa.fasta')
+        outputs.append(f'consensus_split/{sample}.msa.fasta')
 
     return outputs
 
