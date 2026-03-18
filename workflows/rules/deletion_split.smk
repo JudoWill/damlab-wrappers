@@ -112,7 +112,7 @@ def get_all_consensus_outputs(wildcards):
     ]
 
     return expand(
-        'consensus_split/{sample}/{category}.renamed.fa',
+        'consensus_split/{sample}/{category}.stripped.fa',
         sample=wildcards.sample,
         category=categories
     )
@@ -144,6 +144,21 @@ rule rename_consensus_for_msa:
         extra=lambda wildcards: f"-p '^.*' -r '{wildcards.category}'"
     log:
         temp('consensus_split/{sample}/{category}.rename.log')
+    wrapper:
+        f"{SNAKEMAKE_WRAPPER_TAG}/bio/seqkit"
+
+
+rule strip_ns_for_msa:
+    """Remove N bases from consensus sequences before MSA."""
+    input:
+        'consensus_split/{sample}/{category}.renamed.fa'
+    output:
+        temp('consensus_split/{sample}/{category}.stripped.fa')
+    params:
+        command='replace',
+        extra="-s -p 'N' -r ''"
+    log:
+        temp('consensus_split/{sample}/{category}.strip.log')
     wrapper:
         f"{SNAKEMAKE_WRAPPER_TAG}/bio/seqkit"
 
