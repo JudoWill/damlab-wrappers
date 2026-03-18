@@ -92,7 +92,11 @@ def aggregate_scattered_bams(wildcards):
     for pod5_file in pod5_files:
         # Extract basename without extension
         basename = Path(pod5_file).stem
-        scattered_bams.append(f'{mode}/scattered/{basename}.bam')
+        path = f'{mode}/scattered/{basename}.bam'
+        
+        # If file size is greater 0
+        if os.path.getsize(path) > 0:
+            scattered_bams.append(path)
     
     return scattered_bams
 
