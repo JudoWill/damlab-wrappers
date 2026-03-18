@@ -96,7 +96,7 @@ rule sort_deletion_bam:
 
 
 def get_all_consensus_outputs(wildcards):
-    """Return all samtools consensus outputs for a sample after the checkpoint.
+    """Return all renamed consensus outputs for a sample after the checkpoint.
 
     The 'unclassified' category is excluded: it contains reads that were not
     in the split CSV (non-NFL short/partial reads).
@@ -112,7 +112,7 @@ def get_all_consensus_outputs(wildcards):
     ]
 
     return expand(
-        'consensus_split/{sample}/{category}.consensus.fa',
+        'consensus_split/{sample}/{category}.renamed.fa',
         sample=wildcards.sample,
         category=categories
     )
@@ -131,6 +131,21 @@ rule samtools_consensus_per_deletion:
         'consensus_split/{sample}/{category}.consensus.log'
     wrapper:
         "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/consensus/"
+
+
+rule rename_consensus_for_msa:
+    """Rename each consensus sequence to its deletion category so MSA headers are unique."""
+    input:
+        'consensus_split/{sample}/{category}.consensus.fa'
+    output:
+        temp('consensus_split/{sample}/{category}.renamed.fa')
+    params:
+        command='replace',
+        extra=lambda wildcards: f"-p '^.*' -r '{wildcards.category}'"
+    log:
+        temp('consensus_split/{sample}/{category}.rename.log')
+    wrapper:
+        f"{SNAKEMAKE_WRAPPER_TAG}/bio/seqkit"
 
 
 rule concatenate_haplotypes_for_msa:
