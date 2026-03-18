@@ -55,6 +55,8 @@ include: "CRISPR/crispresso-core/test/Snakefile"
 include: "CRISPR/crispresso-compare/test/Snakefile"
 include: "CRISPR/crispresso-aggregate/test/Snakefile"
 
+include: "samtools/consensus/test/Snakefile"
+
 # Rule to run all tests with coverage
 
 
@@ -84,6 +86,7 @@ rule test_cpu:
         rules.test_CRISPR__crispresso_core__all.log,
         rules.test_CRISPR__crispresso_compare__all.log,
         rules.test_CRISPR__crispresso_aggregate__all.log,
+        rules.test_samtools__consensus__all.log,
 
 
 rule test_gpu:

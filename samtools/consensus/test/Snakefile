@@ -1,0 +1,47 @@
+from pathlib import Path
+
+TEST_ROOT_samtools__consensus = Path(workflow.snakefile).parent
+
+
+rule test_samtools__consensus__all:
+    input:
+        files=[
+            TEST_ROOT_samtools__consensus / "test_output/bayesian.consensus.fa",
+            TEST_ROOT_samtools__consensus / "test_output/simple.consensus.fa",
+        ],
+        tests=[TEST_ROOT_samtools__consensus / "tests.py"],
+    conda:
+        "env.yaml"
+    log:
+        stdout=TEST_ROOT_samtools__consensus / "test_output/pytest.stdout.log",
+        stderr=TEST_ROOT_samtools__consensus / "test_output/pytest.stderr.log",
+    shell:
+        "cd {TEST_ROOT_samtools__consensus} && pytest {input.tests} > {log.stdout} 2> {log.stderr}"
+
+
+rule samtools__consensus__test_bayesian:
+    input:
+        TEST_ROOT_samtools__consensus / "test_data/test.sorted.bam",
+    output:
+        TEST_ROOT_samtools__consensus / "test_output/bayesian.consensus.fa",
+    params:
+        mode="bayesian",
+    threads: 1
+    log:
+        temp(TEST_ROOT_samtools__consensus / "test_output/bayesian.log"),
+    wrapper:
+        f"file:{TEST_ROOT_samtools__consensus.parent}"
+
+
+rule samtools__consensus__test_simple:
+    input:
+        TEST_ROOT_samtools__consensus / "test_data/test.sorted.bam",
+    output:
+        TEST_ROOT_samtools__consensus / "test_output/simple.consensus.fa",
+    params:
+        mode="simple",
+    threads: 1
+    log:
+        temp(TEST_ROOT_samtools__consensus / "test_output/simple.log"),
+    wrapper:
+        f"file:{TEST_ROOT_samtools__consensus.parent}"
