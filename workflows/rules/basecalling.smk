@@ -125,6 +125,7 @@ rule pod5_duplexing_scattered:
     params:
         model = config.get('DORADO_MODEL', config.get('DUPLEX_MODEL', 'dna_r10.4.1_e8.2_5khz_stereo@v1.3')),
         models_directory = config.get('MODEL_ROOT'),
+    log: 'duplex/scattered/{basename}.log'
     threads: config.get('SCATTER_THREADS', workflow.cores)
     wrapper:
         "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/dorado/duplex/"
@@ -137,6 +138,7 @@ rule pod5_simplex_scattered:
     params:
         model = config.get('DORADO_MODEL', config.get('SIMPLEX_MODEL', 'dna_r9.4.1_e8_sup@v3.6')),
         models_directory = config.get('MODEL_ROOT'),
+    log: 'simplex/scattered/{basename}.log'
     threads: config.get('SCATTER_THREADS', workflow.cores)
     wrapper:
         "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/dorado/simplex/"
