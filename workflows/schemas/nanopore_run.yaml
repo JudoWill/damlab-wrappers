@@ -90,3 +90,23 @@ properties:
           - mixed
           - NEW
 
+    CONSENSUS_MAX_PRIMARY_READS:
+        type: [integer, "null"]
+        description: >
+          Optional cap on alignments (per samtools view -c -F CONSENSUS_COUNT_FILTER_FLAGS)
+          before samtools consensus; if count exceeds this, subsample with samtools view --subsample.
+          Omit or null to disable downsampling.
+
+    CONSENSUS_SUBSAMPLE_SEED:
+        type: integer
+        default: 0
+        description: >
+          Seed for samtools view --subsample-seed when CONSENSUS_MAX_PRIMARY_READS applies.
+
+    CONSENSUS_COUNT_FILTER_FLAGS:
+        type: string
+        default: "0x900"
+        description: >
+          Exclude mask for counting reads before consensus (samtools view -c -F). Default 0x900
+          excludes secondary and supplementary alignments.
+

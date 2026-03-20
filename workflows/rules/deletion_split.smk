@@ -119,13 +119,21 @@ def get_all_consensus_outputs(wildcards):
 
 
 rule samtools_consensus_per_deletion:
-    """Run samtools consensus on each deletion-pattern BAM."""
+    """Run samtools consensus on each deletion-pattern BAM.
+
+    Optional run.meta.yaml keys (see proviral_nfl.smk): CONSENSUS_MAX_PRIMARY_READS,
+    CONSENSUS_SUBSAMPLE_SEED, CONSENSUS_COUNT_FILTER_FLAGS — forwarded to the
+    samtools/consensus wrapper as max_reads, subsample_seed, count_filter_flags.
+    """
     input:
         get_deletion_bam
     output:
         consensus='consensus_split/{sample}/{category}.consensus.fa'
     params:
-        mode='bayesian'
+        mode='bayesian',
+        max_reads=config.get('CONSENSUS_MAX_PRIMARY_READS'),
+        subsample_seed=config.get('CONSENSUS_SUBSAMPLE_SEED', 0),
+        count_filter_flags=config.get('CONSENSUS_COUNT_FILTER_FLAGS', '0x900'),
     threads: 4
     log:
         'consensus_split/{sample}/{category}.consensus.log'

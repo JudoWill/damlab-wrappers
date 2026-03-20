@@ -8,6 +8,7 @@ rule test_samtools__consensus__all:
         files=[
             TEST_ROOT_samtools__consensus / "test_output/bayesian.consensus.fa",
             TEST_ROOT_samtools__consensus / "test_output/simple.consensus.fa",
+            TEST_ROOT_samtools__consensus / "test_output/max_reads.consensus.fa",
         ],
         tests=[TEST_ROOT_samtools__consensus / "tests.py"],
     conda:
@@ -43,5 +44,23 @@ rule samtools__consensus__test_simple:
     threads: 1
     log:
         temp(TEST_ROOT_samtools__consensus / "test_output/simple.log"),
+    wrapper:
+        f"file:{TEST_ROOT_samtools__consensus.parent}"
+
+
+rule samtools__consensus__test_max_reads:
+    """Exercise count + subsample path (test BAM has 10 primary-like reads with -F 0x900)."""
+    input:
+        TEST_ROOT_samtools__consensus / "test_data/test.sorted.bam",
+    output:
+        TEST_ROOT_samtools__consensus / "test_output/max_reads.consensus.fa",
+    params:
+        mode="bayesian",
+        max_reads=3,
+        subsample_seed=0,
+        count_filter_flags="0x900",
+    threads: 1
+    log:
+        temp(TEST_ROOT_samtools__consensus / "test_output/max_reads.log"),
     wrapper:
         f"file:{TEST_ROOT_samtools__consensus.parent}"

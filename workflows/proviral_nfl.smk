@@ -11,6 +11,14 @@ SNAKEMAKE_WRAPPER_TAG = config.get('snakemake_wrapper_tag', 'v8.1.1')
 WORKFLOW_DIR = workflow.basedir
 DL_PREFIX = config.get("damlab_prefix", join(WORKFLOW_DIR, "../../damlab-wrappers"))
 
+# Optional per-deletion samtools consensus (see rules/deletion_split.smk):
+#   CONSENSUS_MAX_PRIMARY_READS — int or null; if set, count with samtools view -c -F
+#     CONSENSUS_COUNT_FILTER_FLAGS (default 0x900), then subsample with samtools view
+#     --subsample / --subsample-seed when count exceeds the cap (handled in samtools/consensus wrapper).
+#   CONSENSUS_SUBSAMPLE_SEED — int, default 0
+#   CONSENSUS_COUNT_FILTER_FLAGS — string, default "0x900"
+# Validated in schemas/nanopore_run.yaml when present.
+
 # Load samples CSV
 SAMPLES = pd.read_csv(config.get('samples_csv', 'samples.csv'))
 
