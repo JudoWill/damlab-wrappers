@@ -40,7 +40,7 @@ configfile: "run.meta.yaml"
 
 WORKFLOW_DIR = workflow.basedir
 _GITHUB_DEFAULT = (
-    "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main"
+    "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main"
 )
 DL_PREFIX = config.get("damlab_prefix", _GITHUB_DEFAULT)
 

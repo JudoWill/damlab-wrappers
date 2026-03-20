@@ -95,8 +95,8 @@ def aggregate_scattered_bams(wildcards):
         path = f'{mode}/scattered/{basename}.bam'
         
         # If file size is greater 0
-        if os.path.getsize(path) > 0:
-            scattered_bams.append(path)
+        #if os.path.getsize(path) > 0:
+        scattered_bams.append(path)
     
     return scattered_bams
 
