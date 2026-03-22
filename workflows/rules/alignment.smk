@@ -62,3 +62,7 @@ rule index_reads:
     wrapper:
         f"{SNAKEMAKE_WRAPPER_TAG}/bio/sambamba/index"
 
+rule align_all:
+    input:
+        expand('aligned/{sample}.sorted.bam', sample=SAMPLES['sample_name'].unique()),
+        expand(''aligned/{sample}.sorted.bam.bai', sample=SAMPLES['sample_name'].unique()),
