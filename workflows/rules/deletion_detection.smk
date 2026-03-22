@@ -1,5 +1,12 @@
 # Deletion block detection rules
 
+rule deletion_block_detection_all:
+    input:
+        expand('deletion_detection/{sample}.deletion_reads.csv', sample=SAMPLES['sample_name'].unique()),
+        expand('deletion_detection/{sample}.deletion_blocks.csv', sample=SAMPLES['sample_name'].unique()),
+        expand('deletion_detection/{sample}.deletion_summary.yaml', sample=SAMPLES['sample_name'].unique())
+
+
 rule deletion_block_detection:
     input:
         bams='aligned/{sample}.sorted.bam'

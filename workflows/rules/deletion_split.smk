@@ -183,6 +183,10 @@ rule concatenate_haplotypes_for_msa:
     shell:
         'cat {input.reference} {input.haplotypes} > {output} 2> {log}'
 
+rule muscle_deletion_all:
+    input:
+        expand('consensus_split/{sample}.msa.fasta', sample=SAMPLES['sample_name'].unique())
+
 
 rule muscle_deletion_msa:
     """Align reference + all consensus sequences with MUSCLE."""
