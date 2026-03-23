@@ -4,7 +4,7 @@ A wrapper for detecting deletion blocks from BAM files using the cigarmath libra
 
 ## Version
 
-Current version: 1.2.0
+Current version: 1.2.1
 
 For a detailed list of changes, see the [CHANGELOG.md](CHANGELOG.md).
 
@@ -92,7 +92,7 @@ rule detect_deletion_blocks:
 
 ### Query regions
 
-Optional `params.query` requests per-region counts in `query_stats`. Pass either:
+Optional `params.deletion_query` (preferred) or legacy `params.query` requests per-region counts in `query_stats`. Pass either:
 
 - A single string: `"HXB2F:500-700"`
 - Several regions in one string, separated by semicolons: `"HXB2F:500-700;HXB2F:800-900"`
@@ -105,14 +105,14 @@ Format matches `cigarmath/slice`: `ref:start-end`. Reference names may include l
 - **reads_covering**: reads whose alignment span overlaps the query interval on that reference.
 - **reads_with_deletion_overlapping**: reads counted above that also carry at least one reported deletion block (after `min_deletion_size`, allowedlist, and optional `merge_distance`) whose reference interval overlaps the query (half-open intervals, consistent with `cigarmath.reference_deletion_blocks`).
 
-If `query` is absent or empty, `query_stats` is written with a header row only.
+If both are absent or empty, `query_stats` is written with a header row only.
 
 ## Parameters
 
 - `min_deletion_size` (int, optional): Minimum size of deletions to detect. Defaults to 50.
 - `merge_distance` (int, optional): Maximum coordinate distance (in bases) between two deletion blocks' starts **and** ends for them to be merged into a single representative block. The representative is chosen as the block with the highest read count. Set to 0 (default) to disable merging.
 - `sample_name` (str, optional): Sample name to include in metrics. Defaults to "sample".
-- `query` (str, list, optional): Region(s) for `query_stats`; see [Query regions](#query-regions).
+- `deletion_query` (str, list, optional): Region(s) for `query_stats`; see [Query regions](#query-regions). Alias: `query` (legacy).
 
 ## Input
 
@@ -148,7 +148,7 @@ Contains one row per unique deletion (or merged representative when `merge_dista
 
 ### Query-region CSV (`query_stats`)
 
-One row per requested region when `params.query` is non-empty; otherwise header only.
+One row per requested region when `params.deletion_query` / `params.query` is non-empty; otherwise header only.
 
 | Column | Description |
 |--------|-------------|

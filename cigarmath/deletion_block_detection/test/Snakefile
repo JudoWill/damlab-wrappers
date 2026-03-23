@@ -47,7 +47,7 @@ rule test_cigarmath__DBD__deletion_block_detection_query:
     params:
         min_deletion_size = 50,
         sample_name = 'test_query',
-        query = 'HXB2F:50-200;HXB2F:400-1200',
+        deletion_query = 'HXB2F:50-200;HXB2F:400-1200',
     wrapper:
         f"file:{TEST_ROOT_cigarmath__DBD.parent}"
 

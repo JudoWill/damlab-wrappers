@@ -128,6 +128,24 @@ def is_amplicon_file(value):
     return os.path.exists(str(value))
 
 
+def _opt(wildcards, col):
+    """Return the value of an optional samples.csv column, or None if absent/NaN."""
+    row = get_sample(wildcards)
+    v = row.get(col) if hasattr(row, "get") else None
+    if not _notna(v):
+        return None
+    return v
+
+
+def _opt_deletion_query(wildcards):
+    """``deletion_query`` cell as a trimmed string (always ``str()`` for pandas/numpy scalars)."""
+    row = get_sample(wildcards)
+    v = row.get("deletion_query") if hasattr(row, "get") else None
+    if not _notna(v):
+        return None
+    return str(v).strip()
+
+
 # ---------------------------------------------------------------------------
 # Input functions for the crispresso rule
 # ---------------------------------------------------------------------------
@@ -259,7 +277,7 @@ rule deletion_block_detection:
     """Detect reference deletion blocks per sample (cigarmath/deletion_block_detection).
 
     Runs only for rows with ``bam_file`` set. Uses the same BAM as slice/bam2fastq.
-    Optional ``deletion_query`` column is passed as ``params.query`` (regions
+    Optional ``deletion_query`` column is passed as ``params.deletion_query`` (regions
     ``ref:start-end``, multiple separated by semicolons); see wrapper README.
     """
     input:
@@ -273,16 +291,11 @@ rule deletion_block_detection:
         min_deletion_size=config.get("MIN_DELETION_SIZE", 50),
         merge_distance=config.get("DELETION_MERGE_DISTANCE", 10),
         sample_name=lambda wc: wc.sample_name,
-        query=lambda wc: _opt(wc, "deletion_query"),
+        deletion_query=lambda wc: _opt_deletion_query(wc),
     log:
         "logs/{sample_name}.deletion_detection.log",
     wrapper:
         wrapper_path("cigarmath/deletion_block_detection")
-
-
-def _opt(wildcards, col):
-    """Return the value of an optional samples.csv column, or None if absent/NaN."""
-    return get_sample(wildcards).get(col) if _notna(get_sample(wildcards).get(col)) else None
 
 
 rule crispresso:

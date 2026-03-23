@@ -4,7 +4,7 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2026"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import math
 import re
@@ -33,6 +33,32 @@ def parse_region(region_str: str) -> Tuple[str, Optional[int], Optional[int]]:
     start = int(match.group(2)) if match.group(2) else None
     end = int(match.group(3)) if match.group(3) else None
     return ref, start, end
+
+
+def _resolve_query_raw_from_params(params: Any) -> Any:
+    """Prefer ``deletion_query`` (Snakemake param name); fall back to ``query`` for older rules."""
+    v = getattr(params, "deletion_query", None)
+    if v is None and hasattr(params, "get"):
+        v = params.get("deletion_query")
+    if v is None:
+        v = getattr(params, "query", None)
+    if v is None and hasattr(params, "get"):
+        v = params.get("query")
+    return v
+
+
+def _unwrap_scalar(x: Any) -> Any:
+    """Extract Python scalar from numpy/pandas 0-d values so ``isinstance(..., str)`` works."""
+    if x is None or isinstance(x, (str, list, tuple)):
+        return x
+    if isinstance(x, float) and math.isnan(x):
+        return None
+    if hasattr(x, "item"):
+        try:
+            return x.item()
+        except Exception:
+            return str(x)
+    return x
 
 
 def normalize_query_param(raw: Any) -> List[str]:
@@ -216,7 +242,7 @@ output_query_stats = snakemake.output.query_stats
 min_deletion_size = snakemake.params.get("min_deletion_size", 50)
 merge_distance = snakemake.params.get("merge_distance", 0)
 sample_name = snakemake.params.get("sample_name", "sample")
-query_raw = snakemake.params.get("query", None)
+query_raw = _unwrap_scalar(_resolve_query_raw_from_params(snakemake.params))
 query_tokens = normalize_query_param(query_raw)
 
 # Get optional allowedlist
