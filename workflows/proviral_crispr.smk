@@ -28,7 +28,7 @@ samples.csv columns:
                             every experiment sample is compared to every control
     deletion_query (optional) regions for per-region deletion/coverage stats on the BAM
                             (ref:start-end; multiple separated by ';'). Passed to
-                            cigarmath/deletion_block_detection params.query. BAM samples only.
+                            cigarmath/deletion_block_detection as params.deletion_query. BAM samples only.
 """
 
 import os
@@ -65,7 +65,25 @@ def wrapper_path(subpath):
 # Load samples
 # ---------------------------------------------------------------------------
 
-SAMPLES = pd.read_csv(config.get("samples_csv", "samples.csv"))
+
+def _normalize_sample_table_columns(df):
+    """Strip UTF-8 BOM and surrounding whitespace from CSV headers (common Excel/export issue)."""
+    out = df.copy()
+    out.columns = (
+        out.columns.astype(str)
+        .str.replace("\ufeff", "", regex=False)
+        .str.strip()
+    )
+    return out
+
+
+SAMPLES = _normalize_sample_table_columns(
+    pd.read_csv(config.get("samples_csv", "samples.csv"), encoding="utf-8-sig")
+)
+
+# Align sample_name with Snakemake wildcards (trim accidental spaces from spreadsheet exports)
+if "sample_name" in SAMPLES.columns:
+    SAMPLES["sample_name"] = SAMPLES["sample_name"].astype(str).str.strip()
 
 # ---------------------------------------------------------------------------
 # Comparison detection (optional column)
@@ -138,10 +156,24 @@ def _opt(wildcards, col):
     return v
 
 
+def _cell_by_logical_column(row, logical_name: str):
+    """Read one cell; match column by case-insensitive stripped name (handles odd CSV headers)."""
+    if not hasattr(row, "index"):
+        return None
+    want = logical_name.strip().lower()
+    for col in row.index:
+        key = str(col).replace("\ufeff", "").strip().lower()
+        if key == want:
+            return row[col]
+    return None
+
+
 def _opt_deletion_query(wildcards):
     """``deletion_query`` cell as a trimmed string (always ``str()`` for pandas/numpy scalars)."""
     row = get_sample(wildcards)
-    v = row.get("deletion_query") if hasattr(row, "get") else None
+    v = _cell_by_logical_column(row, "deletion_query")
+    if v is None and hasattr(row, "get"):
+        v = row.get("deletion_query")
     if not _notna(v):
         return None
     return str(v).strip()

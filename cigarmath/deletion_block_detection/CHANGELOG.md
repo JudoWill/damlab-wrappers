@@ -5,6 +5,15 @@ All notable changes to this wrapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-23
+
+### Added
+- Summary YAML: `targeted_regions` (same rows as `query_stats.csv`), `targeted_region_count`, `target_reads_covering_sum`, `target_reads_with_deletion_overlapping_sum`.
+- Summary YAML: `top_deletions` — up to 10 blocks with `deletion_start`, `deletion_end`, `deletion_size`, `read_count`, `coverage_count` (for MultiQC cross-sample plots).
+
+### Changed
+- Version bumped to 1.3.0
+
 ## [1.2.2] - 2026-03-23
 
 ### Added

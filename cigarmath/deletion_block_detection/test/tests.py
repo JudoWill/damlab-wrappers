@@ -66,10 +66,15 @@ def test_summary_yaml_structure():
         'input_bam_count',
         'allowedlist_used',
         'allowedlist_size',
+        'targeted_regions',
+        'targeted_region_count',
+        'target_reads_covering_sum',
+        'target_reads_with_deletion_overlapping_sum',
+        'top_deletions',
     }
-    
-    assert set(summary.keys()) == required_keys, \
-        f"Expected keys {required_keys}, got {set(summary.keys())}"
+
+    assert required_keys <= set(summary.keys()), \
+        f"Expected at least keys {required_keys}, got {set(summary.keys())}"
 
 
 def test_summary_values():
@@ -91,6 +96,29 @@ def test_summary_values():
     assert summary['allowedlist_used'] is False, "allowedlist_used should be False"
     assert summary['allowedlist_size'] == 0, "allowedlist_size should be 0"
     assert summary['merge_distance'] == 0, "merge_distance should be 0"
+    assert summary['targeted_regions'] == [], "no query → empty targeted_regions"
+    assert summary['targeted_region_count'] == 0
+    assert summary['target_reads_covering_sum'] == 0
+    assert summary['target_reads_with_deletion_overlapping_sum'] == 0
+    assert isinstance(summary['top_deletions'], list)
+    assert len(summary['top_deletions']) <= 10
+
+
+def test_top_deletions_matches_deletions_csv():
+    """top_deletions in YAML matches first rows of deletions.csv."""
+    with open('test_output/summary.yaml') as f:
+        summary = yaml.safe_load(f)
+    with open('test_output/deletions.csv', newline='') as f:
+        rows = list(csv.DictReader(f))
+    top = summary['top_deletions']
+    assert len(top) == min(10, len(rows))
+    for i, yrow in enumerate(top):
+        crow = rows[i]
+        assert int(yrow['deletion_start']) == int(crow['deletion_start'])
+        assert int(yrow['deletion_end']) == int(crow['deletion_end'])
+        assert int(yrow['read_count']) == int(crow['read_count'])
+    counts = [int(x['read_count']) for x in top]
+    assert counts == sorted(counts, reverse=True), "top_deletions should be non-increasing by read_count"
 
 
 def test_query_stats_header_only_when_no_query():
@@ -126,6 +154,22 @@ def test_query_stats_with_query_regions():
     assert int(r2['reads_covering']) > 0
     # Large deletions in test data overlap this window
     assert int(r2['reads_with_deletion_overlapping']) > 0
+
+
+def test_targeted_regions_matches_query_summary_yaml():
+    """targeted_regions in summary.yaml matches query_stats.csv for query run."""
+    with open('test_output_query/summary.yaml') as f:
+        summary = yaml.safe_load(f)
+    with open('test_output_query/query_stats.csv', newline='') as f:
+        rows = list(csv.DictReader(f))
+    tr = summary['targeted_regions']
+    assert len(tr) == len(rows)
+    for yrow, crow in zip(tr, rows):
+        assert yrow['region'] == crow['region']
+        assert int(yrow['reads_covering']) == int(crow['reads_covering'])
+        assert int(yrow['reads_with_deletion_overlapping']) == int(
+            crow['reads_with_deletion_overlapping']
+        )
 
 
 def test_cross_check_counts():

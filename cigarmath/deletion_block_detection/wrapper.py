@@ -4,7 +4,7 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2026"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 import logging
 import math
@@ -429,6 +429,49 @@ if query_tokens:
 if _debug_deletion_query and query_regions_parsed:
     _log_reference_names_for_query_debug(_dbg, read_data, query_regions_parsed)
 
+# Per-query-region stats (same rows written to query_stats.csv; also embedded in summary YAML)
+query_stats_rows: List[dict] = []
+if query_regions_parsed:
+    for token, qref, qs, qe in query_regions_parsed:
+        reads_covering = 0
+        reads_del_ovl = 0
+        for read in read_data:
+            if (read.get('reference_name') or '') != qref:
+                continue
+            rs = read['reference_start']
+            re = read['reference_end']
+            if not read_overlaps_query_interval(rs, re, qs, qe):
+                continue
+            reads_covering += 1
+            del_str = read.get('deletions') or ''
+            dels: List[Tuple[int, int]] = []
+            if del_str.strip():
+                dels = [
+                    tuple(map(int, x.split('-')))  # type: ignore[misc]
+                    for x in del_str.split(';')
+                ]
+            if any(
+                deletion_overlaps_query_interval(d0, d1, qs, qe) for d0, d1 in dels
+            ):
+                reads_del_ovl += 1
+        row = {
+            'region': token,
+            'reference': qref,
+            'start': qs,
+            'end': qe,
+            'reads_covering': reads_covering,
+            'reads_with_deletion_overlapping': reads_del_ovl,
+        }
+        query_stats_rows.append(row)
+        if _debug_deletion_query:
+            _dbg.info("query_stats %s", row)
+elif query_tokens and not query_regions_parsed:
+    _dbg.warning(
+        "query_tokens non-empty but query_regions_parsed empty (parse error above); CSV is header-only"
+    )
+elif not query_tokens and _debug_deletion_query:
+    _dbg.info("no query tokens; query_stats CSV is header-only")
+
 # Write read-centered CSV (exclude internal reference_name; not part of public schema)
 _read_csv_fields = ['read_name', 'reference_start', 'reference_end', 'deletions']
 with open(output_reads_csv, 'w', newline='') as f:
@@ -457,6 +500,33 @@ total_deletion_count = sum(deletion_counter.values())
 richness = len(deletion_counter)
 shannon_entropy = calculate_shannon_entropy(deletion_counter)
 
+targeted_regions_yaml: List[dict] = []
+for r in query_stats_rows:
+    targeted_regions_yaml.append(
+        {
+            'region': r['region'],
+            'reference': r['reference'],
+            'start': int(r['start']),
+            'end': int(r['end']),
+            'reads_covering': int(r['reads_covering']),
+            'reads_with_deletion_overlapping': int(r['reads_with_deletion_overlapping']),
+        }
+    )
+target_cov_sum = sum(int(r['reads_covering']) for r in query_stats_rows)
+target_ovl_sum = sum(int(r['reads_with_deletion_overlapping']) for r in query_stats_rows)
+
+top_deletions: List[dict] = []
+for row in deletion_data[:10]:
+    top_deletions.append(
+        {
+            'deletion_start': int(row['deletion_start']),
+            'deletion_end': int(row['deletion_end']),
+            'deletion_size': int(row['deletion_size']),
+            'read_count': int(row['read_count']),
+            'coverage_count': int(row['coverage_count']),
+        }
+    )
+
 # Write summary YAML for MultiQC
 summary = {
     'sample_name': sample_name,
@@ -471,7 +541,12 @@ summary = {
     'merge_distance': merge_distance,
     'input_bam_count': len(input_bams),
     'allowedlist_used': allowed_deletions is not None,
-    'allowedlist_size': len(allowed_deletions) if allowed_deletions else 0
+    'allowedlist_size': len(allowed_deletions) if allowed_deletions else 0,
+    'targeted_regions': targeted_regions_yaml,
+    'targeted_region_count': len(targeted_regions_yaml),
+    'target_reads_covering_sum': target_cov_sum,
+    'target_reads_with_deletion_overlapping_sum': target_ovl_sum,
+    'top_deletions': top_deletions,
 }
 
 with open(output_summary_yaml, 'w') as f:
@@ -490,46 +565,5 @@ query_fieldnames = [
 with open(output_query_stats, 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=query_fieldnames)
     writer.writeheader()
-    if query_regions_parsed:
-        for token, qref, qs, qe in query_regions_parsed:
-            reads_covering = 0
-            reads_del_ovl = 0
-            for read in read_data:
-                if (read.get('reference_name') or '') != qref:
-                    continue
-                rs = read['reference_start']
-                re = read['reference_end']
-                if not read_overlaps_query_interval(rs, re, qs, qe):
-                    continue
-                reads_covering += 1
-                del_str = read.get('deletions') or ''
-                dels: List[Tuple[int, int]] = []
-                if del_str.strip():
-                    dels = [
-                        tuple(map(int, x.split('-')))  # type: ignore[misc]
-                        for x in del_str.split(';')
-                    ]
-                if any(
-                    deletion_overlaps_query_interval(d0, d1, qs, qe) for d0, d1 in dels
-                ):
-                    reads_del_ovl += 1
-            row = {
-                'region': token,
-                'reference': qref,
-                'start': qs,
-                'end': qe,
-                'reads_covering': reads_covering,
-                'reads_with_deletion_overlapping': reads_del_ovl,
-            }
-            writer.writerow(row)
-            if _debug_deletion_query:
-                _dbg.info(
-                    "query_stats %s",
-                    row,
-                )
-    elif query_tokens and not query_regions_parsed:
-        _dbg.warning(
-            "query_tokens non-empty but query_regions_parsed empty (parse error above); CSV is header-only"
-        )
-    elif not query_tokens and _debug_deletion_query:
-        _dbg.info("no query tokens; query_stats CSV is header-only")
+    for row in query_stats_rows:
+        writer.writerow(row)

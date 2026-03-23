@@ -22,7 +22,7 @@ rule multiqc:
         expand("build/deletion_frequency/{sample}.vpr.deletion_frequency.yaml", sample=SAMPLES),
         expand("build/generic/{sample}.generic.yaml", sample=SAMPLES),
         expand("build/primercheck/{sample}.primercheck.yaml", sample=SAMPLES),
-        expand("build/hivbert/{sample}.hivbert.yaml", sample=SAMPLES),
+        #expand("build/hivbert/{sample}.hivbert.yaml", sample=SAMPLES),
         expand("build/intactness/{sample}.intactness.yaml", sample=SAMPLES),
         expand("build/slice/{sample}.{region}.metrics.yaml", sample=SAMPLES, region=REGIONS),
         expand("build/deletion_block_detection/{sample}.summary.yaml", sample=SAMPLES)

@@ -213,7 +213,7 @@ Override with `--configfile` on the command line.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `samples_csv` | `samples.csv` | Path to the samples CSV file, relative to the working directory (`ROOT`). |
+| `samples_csv` | `samples.csv` | Path to the samples CSV file, relative to the working directory (`ROOT`). Read with UTF-8 BOM support; column names are stripped so headers like ``deletion_query `` still match. |
 | `MIN_DELETION_SIZE` | `50` | Minimum deletion length (bp) for `deletion_block_detection`. |
 | `DELETION_MERGE_DISTANCE` | `10` | Merge deletion blocks whose coordinates are within this distance. |
 | `DEBUG_DELETION_QUERY` | `true` | If true, the deletion wrapper writes query-param diagnostics to `logs/{sample_name}.deletion_detection.log`. Set to `false` to turn off. |
@@ -382,6 +382,8 @@ CRISPRessoCompare jobs are created.
 
 ### Using the `data_scripts` makefile (recommended)
 
+On shared filesystems (e.g. NFS), Snakemake may raise `MissingOutputException` right after a successful SLURM job because the submit host has not yet seen files written on a compute node. The Picotte profile sets `latency-wait: 90` (seconds). If you still see this, increase it (e.g. `snakemake ... --latency-wait 180`) or retry the same targets.
+
 ```bash
 # Dry run to check the DAG
 make proviral-crispr ROOT=/path/to/run MACHINE=Picotte EXTRA="-n"
@@ -502,6 +504,16 @@ Each sample is handled independently; input mode is detected per-row.
 The wildcard `{sample_name}` in an output path does not match any
 `sample_name` value in `samples.csv`. Check for trailing whitespace or
 inconsistent capitalisation in the CSV.
+
+### Deletion `query_stats` is header-only; log shows `deletion_query` param is `None`
+
+Snakemake is calling the wrapper with an empty query because the value read from `samples.csv` for that `sample_name` is missing or blank. The pipeline now normalizes headers (UTF-8 BOM, spaces) and matches `deletion_query` case-insensitively; `sample_name` cells are stripped.
+
+If it still happens, confirm the **same** CSV the run uses actually contains text in `deletion_query` for that row (cluster copy vs laptop):
+
+```bash
+python -c "import pandas as pd; df=pd.read_csv('samples.csv',encoding='utf-8-sig'); print(df.columns.tolist()); print(df[['sample_name','deletion_query']])"
+```
 
 ### CRISPResso fails with "no reads mapped to amplicon"
 

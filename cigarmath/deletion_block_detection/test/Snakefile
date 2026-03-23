@@ -1,5 +1,6 @@
 # Get the directory of the current Snakefile
 TEST_ROOT_cigarmath__DBD = Path(workflow.snakefile).parent
+WRAPPER_VERSION = "v5.8.0"
 
 
 rule test_cigarmath__DBD__all:
