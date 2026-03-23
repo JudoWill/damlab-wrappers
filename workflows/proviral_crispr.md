@@ -37,6 +37,8 @@ samples.csv
 │  BAM + region ──→ cigarmath/slice ────── ┘   │
 └──────────────────────────────────────────────┘
     ↓
+BAM rows only: deletion_block_detection  →  deletion_detection/*  (parallel to FASTQ prep)
+    ↓
 CRISPResso  →  crispresso/CRISPResso_on_{sample_name}/
     ├──→  (if comparison column present)
     │     CRISPRessoCompare  →  crispresso/CRISPRessoCompare_{exp}_vs_{ctrl}/
@@ -51,6 +53,9 @@ CRISPResso  →  crispresso/CRISPResso_on_{sample_name}/
 - Automatic CRISPRessoAggregate report combining all samples into one summary
 - Optional automatic pairwise comparison of every experiment sample against
   every control sample using CRISPRessoCompare
+- For **BAM** samples, `cigarmath/deletion_block_detection` runs on the same
+  `bam_file` (read-level and block-level deletion CSVs, summary YAML, and
+  optional per-region stats from `deletion_query`)
 - Wrappers fetched from GitHub by default; override with a local path for
   development or reproducibility pinning
 
@@ -71,7 +76,24 @@ Converts input reads into FASTQ for CRISPResso.  The rule used depends on the
 
 Intermediate files are written to `fastq/` and are not final pipeline outputs.
 
-### 2. CRISPResso (`rule crispresso`)
+### 2. Deletion block detection (`rule deletion_block_detection`)
+
+For every sample with `bam_file` set, runs
+[`cigarmath/deletion_block_detection`](../cigarmath/deletion_block_detection/)
+on that BAM (independent of `slice_bam_region` / `bam_to_fastq`).
+
+- Optional `deletion_query` column: regions in `ref:start-end` form; multiple
+  regions in one cell separated by semicolons (e.g. `HXB2F:500-700;HXB2F:800-900`).
+  Passed as the wrapper’s `query` parameter; see the wrapper README for column
+  definitions in `deletion_query_stats.csv`.
+- If `deletion_query` is blank, `deletion_query_stats.csv` still appears with a
+  header-only table.
+- Thresholds: `MIN_DELETION_SIZE` and `DELETION_MERGE_DISTANCE` in `run.meta.yaml`
+  (defaults 50 and 10, same as the standalone deletion workflow).
+
+Outputs under `deletion_detection/` (see [Output Files](#output-files)).
+
+### 3. CRISPResso (`rule crispresso`)
 
 Runs [CRISPResso2](https://github.com/pinellolab/CRISPResso2) on each sample
 using the `CRISPR/crispresso-core` wrapper.
@@ -82,25 +104,25 @@ using the `CRISPR/crispresso-core` wrapper.
 - Guide sequence (`grna` column) passed as `--guide_seq`
 - Output: `crispresso/CRISPResso_on_{sample_name}/`
 
-### 3. CRISPRessoAggregate (`rule crispresso_aggregate`)
+### 4. CRISPRessoAggregate (`rule crispresso_aggregate`)
 
 Runs [CRISPRessoAggregate](https://docs.crispresso.com/latest/aggregate/tool.html)
 across **all** samples in the run using the `CRISPR/crispresso-aggregate` wrapper.
 This step always executes regardless of whether the `comparison` column is
 present.
 
-- Input: every `CRISPResso_on_{sample_name}` directory produced in stage 2
+- Input: every `CRISPResso_on_{sample_name}` directory produced in stage 3
 - Output: `crispresso/CRISPRessoAggregate_on_all/` — a single HTML report and
   summary plots covering the entire run
 - 4 threads
 
-### 4. CRISPRessoCompare (`rule crispresso_compare`)
+### 5. CRISPRessoCompare (`rule crispresso_compare`)
 
 Only generated when the `comparison` column is present in `samples.csv`.
 Runs `CRISPRessoCompare` for every combination of experiment × control sample
 (Cartesian product).
 
-- Input: the two `CRISPResso_on_*` directories produced in stage 2
+- Input: the two `CRISPResso_on_*` directories produced in stage 3
 - Output: `crispresso/CRISPRessoCompare_{exp_name}_vs_{ctrl_name}/`
 
 ---
@@ -175,6 +197,7 @@ present.
 | `bam_file` | cond. | Path to a BAM file. Required unless `fastq_r1` is set. |
 | `region` | no | Genomic region in `chr:start-stop` format. Only used with `bam_file`. When set, reads are sliced to this region before CRISPResso. |
 | `comparison` | no | `experiment` or `control`. When present, enables automatic CRISPRessoCompare runs for every experiment × control pair. |
+| `deletion_query` | no | **BAM samples only.** Optional regions for per-window read/deletion counts (`ref:start-end`; multiple separated by `;`). See [Pipeline Stages](#pipeline-stages) §2. |
 | `guide_name` | no | Display name for the guide RNA in CRISPResso plots (`--guide_name`). |
 | `amplicon_name` | no | Display name for the amplicon (`--amplicon_name`). Defaults to the FASTA record ID when `amplicon` is a file. |
 | `quantification_window_center` | no | Cleavage offset from the 3′ end of the guide sequence (`--quantification_window_center`). CRISPResso default: −3. |
@@ -191,6 +214,8 @@ Override with `--configfile` on the command line.
 | Key | Default | Description |
 |-----|---------|-------------|
 | `samples_csv` | `samples.csv` | Path to the samples CSV file, relative to the working directory (`ROOT`). |
+| `MIN_DELETION_SIZE` | `50` | Minimum deletion length (bp) for `deletion_block_detection`. |
+| `DELETION_MERGE_DISTANCE` | `10` | Merge deletion blocks whose coordinates are within this distance. |
 | `damlab_prefix` | GitHub `main` branch | Base URL or local path for damlab-wrappers. See below. |
 
 ### `damlab_prefix`
@@ -323,6 +348,12 @@ CRISPRessoCompare jobs are created.
 │   ├── {sample_name}.bam.fastq         #   BAM mode
 │   └── {sample_name}.slice.fastq       #   BAM + region mode
 │
+├── deletion_detection/                 # BAM samples only (cigarmath/deletion_block_detection)
+│   ├── {sample_name}.deletion_reads.csv
+│   ├── {sample_name}.deletion_blocks.csv
+│   ├── {sample_name}.deletion_summary.yaml
+│   └── {sample_name}.deletion_query_stats.csv   # header-only if no deletion_query
+│
 ├── crispresso/
 │   ├── CRISPResso_on_{sample_name}/            # CRISPResso output (one per sample)
 │   │   ├── CRISPResso_output.html
@@ -339,6 +370,7 @@ CRISPRessoCompare jobs are created.
     ├── {sample_name}.crispresso.log
     ├── {sample_name}.slice.log
     ├── {sample_name}.bam2fastx.log
+    ├── {sample_name}.deletion_detection.log
     ├── aggregate.log
     └── {exp_name}_vs_{ctrl_name}.compare.log
 ```

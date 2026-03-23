@@ -6,6 +6,8 @@ slicing via cigarmath/slice).
 
 Config keys (config.yaml or run.meta.yaml):
     samples_csv     : path to samples CSV (default: samples.csv)
+    MIN_DELETION_SIZE       : optional; min deletion length for deletion_block_detection (default: 50)
+    DELETION_MERGE_DISTANCE : optional; merge nearby deletion blocks (default: 10)
     damlab_prefix   : base location for damlab-wrappers. Can be:
                         - a local filesystem path  (e.g. /path/to/damlab-wrappers)
                         - a URL                    (e.g. https://raw.githubusercontent.com/...)
@@ -23,6 +25,9 @@ samples.csv columns:
     region       (optional) chr:start-stop, only used with bam_file
     comparison   (optional) 'experiment' or 'control' — enables CRISPRessoCompare
                             every experiment sample is compared to every control
+    deletion_query (optional) regions for per-region deletion/coverage stats on the BAM
+                            (ref:start-end; multiple separated by ';'). Passed to
+                            cigarmath/deletion_block_detection params.query. BAM samples only.
 """
 
 import os
@@ -101,6 +106,14 @@ def _notna(value):
         return False
 
 
+if "bam_file" in SAMPLES.columns:
+    BAM_SAMPLE_NAMES = SAMPLES.loc[
+        SAMPLES["bam_file"].apply(_notna), "sample_name"
+    ].tolist()
+else:
+    BAM_SAMPLE_NAMES = []
+
+
 def get_input_mode(row):
     """Return 'bam_region', 'bam', or 'fastq' for a sample row."""
     if _notna(row.get("bam_file")):
@@ -171,11 +184,27 @@ def get_all_compare_outputs(wildcards):
     ]
 
 
+def get_all_deletion_outputs(wildcards):
+    """Deletion block detection outputs (BAM-backed samples only)."""
+    paths = []
+    for s in BAM_SAMPLE_NAMES:
+        paths.extend(
+            [
+                f"deletion_detection/{s}.deletion_reads.csv",
+                f"deletion_detection/{s}.deletion_blocks.csv",
+                f"deletion_detection/{s}.deletion_summary.yaml",
+                f"deletion_detection/{s}.deletion_query_stats.csv",
+            ]
+        )
+    return paths
+
+
 def get_all_outputs(wildcards):
     return (
         get_all_crispresso_outputs(wildcards)
         + get_all_compare_outputs(wildcards)
         + ["crispresso/CRISPRessoAggregate_on_all"]
+        + get_all_deletion_outputs(wildcards)
     )
 
 
@@ -224,6 +253,31 @@ rule bam_to_fastq:
         "logs/{sample_name}.bam2fastx.log",
     wrapper:
         wrapper_path("cigarmath/bam2fastx")
+
+
+rule deletion_block_detection:
+    """Detect reference deletion blocks per sample (cigarmath/deletion_block_detection).
+
+    Runs only for rows with ``bam_file`` set. Uses the same BAM as slice/bam2fastq.
+    Optional ``deletion_query`` column is passed as ``params.query`` (regions
+    ``ref:start-end``, multiple separated by semicolons); see wrapper README.
+    """
+    input:
+        bams=lambda wc: get_sample(wc)["bam_file"],
+    output:
+        reads="deletion_detection/{sample_name}.deletion_reads.csv",
+        deletions="deletion_detection/{sample_name}.deletion_blocks.csv",
+        summary="deletion_detection/{sample_name}.deletion_summary.yaml",
+        query_stats="deletion_detection/{sample_name}.deletion_query_stats.csv",
+    params:
+        min_deletion_size=config.get("MIN_DELETION_SIZE", 50),
+        merge_distance=config.get("DELETION_MERGE_DISTANCE", 10),
+        sample_name=lambda wc: wc.sample_name,
+        query=lambda wc: _opt(wc, "deletion_query"),
+    log:
+        "logs/{sample_name}.deletion_detection.log",
+    wrapper:
+        wrapper_path("cigarmath/deletion_block_detection")
 
 
 def _opt(wildcards, col):

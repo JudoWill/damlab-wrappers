@@ -1,0 +1,14 @@
+# Cigarmath Deletion Block Detection
+allowedlist_size: 0
+allowedlist_used: false
+deletion_frequency: 0.21666666666666667
+deletion_richness: 17
+deletion_shannon_entropy: 2.271869
+input_bam_count: 1
+merge_distance: 0
+min_deletion_size: 50
+reads_with_deletions: 39
+sample_name: test_query
+total_deletion_count: 39
+total_reads: 180
+unique_deletion_count: 17

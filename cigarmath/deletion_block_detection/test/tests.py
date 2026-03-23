@@ -8,6 +8,8 @@ def test_output_files_exist():
     assert os.path.exists('test_output/reads.csv'), "reads.csv not found"
     assert os.path.exists('test_output/deletions.csv'), "deletions.csv not found"
     assert os.path.exists('test_output/summary.yaml'), "summary.yaml not found"
+    assert os.path.exists('test_output/query_stats.csv'), "query_stats.csv not found"
+    assert os.path.exists('test_output_query/query_stats.csv'), "test_output_query/query_stats.csv not found"
 
 
 def test_reads_csv_structure():
@@ -57,10 +59,13 @@ def test_summary_yaml_structure():
         'unique_deletion_count',
         'total_deletion_count',
         'deletion_frequency',
+        'deletion_richness',
+        'deletion_shannon_entropy',
         'min_deletion_size',
+        'merge_distance',
         'input_bam_count',
         'allowedlist_used',
-        'allowedlist_size'
+        'allowedlist_size',
     }
     
     assert set(summary.keys()) == required_keys, \
@@ -83,8 +88,44 @@ def test_summary_values():
         "deletion_frequency should be between 0 and 1"
     assert summary['min_deletion_size'] == 50, "min_deletion_size should be 50"
     assert summary['input_bam_count'] == 1, "input_bam_count should be 1"
-    assert summary['allowedlist_used'] == False, "allowedlist_used should be False"
+    assert summary['allowedlist_used'] is False, "allowedlist_used should be False"
     assert summary['allowedlist_size'] == 0, "allowedlist_size should be 0"
+    assert summary['merge_distance'] == 0, "merge_distance should be 0"
+
+
+def test_query_stats_header_only_when_no_query():
+    """Without params.query, query_stats is header-only."""
+    with open('test_output/query_stats.csv', newline='') as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    assert rows == [], "expected no data rows when query is omitted"
+    assert reader.fieldnames == [
+        'region',
+        'reference',
+        'start',
+        'end',
+        'reads_covering',
+        'reads_with_deletion_overlapping',
+    ]
+
+
+def test_query_stats_with_query_regions():
+    """With query, one row per region and sensible counts on subsampled test BAM."""
+    with open('test_output_query/query_stats.csv', newline='') as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    assert len(rows) == 2, "expected two query regions"
+    by_region = {r['region']: r for r in rows}
+    assert 'HXB2F:50-200' in by_region
+    assert 'HXB2F:400-1200' in by_region
+    r1 = by_region['HXB2F:50-200']
+    assert r1['reference'] == 'HXB2F'
+    assert int(r1['reads_covering']) > 0
+    assert int(r1['reads_with_deletion_overlapping']) >= 0
+    r2 = by_region['HXB2F:400-1200']
+    assert int(r2['reads_covering']) > 0
+    # Large deletions in test data overlap this window
+    assert int(r2['reads_with_deletion_overlapping']) > 0
 
 
 def test_cross_check_counts():

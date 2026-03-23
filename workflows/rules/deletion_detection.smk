@@ -4,7 +4,8 @@ rule deletion_block_detection_all:
     input:
         expand('deletion_detection/{sample}.deletion_reads.csv', sample=SAMPLES['sample_name'].unique()),
         expand('deletion_detection/{sample}.deletion_blocks.csv', sample=SAMPLES['sample_name'].unique()),
-        expand('deletion_detection/{sample}.deletion_summary.yaml', sample=SAMPLES['sample_name'].unique())
+        expand('deletion_detection/{sample}.deletion_summary.yaml', sample=SAMPLES['sample_name'].unique()),
+        expand('deletion_detection/{sample}.deletion_query_stats.csv', sample=SAMPLES['sample_name'].unique()),
 
 
 rule deletion_block_detection:
@@ -13,11 +14,13 @@ rule deletion_block_detection:
     output:
         reads='deletion_detection/{sample}.deletion_reads.csv',
         deletions='deletion_detection/{sample}.deletion_blocks.csv',
-        summary='deletion_detection/{sample}.deletion_summary.yaml'
+        summary='deletion_detection/{sample}.deletion_summary.yaml',
+        query_stats='deletion_detection/{sample}.deletion_query_stats.csv',
     params:
         min_deletion_size=config.get('MIN_DELETION_SIZE', 50),
         merge_distance=config.get('DELETION_MERGE_DISTANCE', 10),
-        sample_name=lambda wildcards: wildcards.sample
+        sample_name=lambda wildcards: wildcards.sample,
+        query=config.get('DELETION_QUERY', None),
     log:
         'deletion_detection/{sample}.deletion_detection.log'
     wrapper:

@@ -4,7 +4,7 @@ A wrapper for detecting deletion blocks from BAM files using the cigarmath libra
 
 ## Version
 
-Current version: 1.1.0
+Current version: 1.2.0
 
 For a detailed list of changes, see the [CHANGELOG.md](CHANGELOG.md).
 
@@ -21,13 +21,16 @@ rule detect_deletion_blocks:
     output:
         reads="deletion_reads.csv",
         deletions="deletion_blocks.csv",
-        summary="deletion_summary.yaml"
+        summary="deletion_summary.yaml",
+        query_stats="deletion_query_stats.csv",
     params:
         min_deletion_size=50,
         sample_name="patient1"
     wrapper:
         "file:path/to/damlab-wrappers/cigarmath/deletion_block_detection"
 ```
+
+`query_stats` is always produced: header-only when `query` is omitted; see [Query regions](#query-regions).
 
 ### Multiple BAM Files
 
@@ -38,7 +41,8 @@ rule detect_deletion_blocks:
     output:
         reads="deletion_reads.csv",
         deletions="deletion_blocks.csv",
-        summary="deletion_summary.yaml"
+        summary="deletion_summary.yaml",
+        query_stats="deletion_query_stats.csv",
     params:
         min_deletion_size=50,
         sample_name="combined_samples"
@@ -56,7 +60,8 @@ rule detect_deletion_blocks:
     output:
         reads="deletion_reads.csv",
         deletions="deletion_blocks.csv",
-        summary="deletion_summary.yaml"
+        summary="deletion_summary.yaml",
+        query_stats="deletion_query_stats.csv",
     params:
         min_deletion_size=50,
         sample_name="filtered_sample"
@@ -75,7 +80,8 @@ rule detect_deletion_blocks:
     output:
         reads="deletion_reads.csv",
         deletions="deletion_blocks.csv",
-        summary="deletion_summary.yaml"
+        summary="deletion_summary.yaml",
+        query_stats="deletion_query_stats.csv",
     params:
         min_deletion_size=50,
         merge_distance=10,
@@ -84,11 +90,29 @@ rule detect_deletion_blocks:
         "file:path/to/damlab-wrappers/cigarmath/deletion_block_detection"
 ```
 
+### Query regions
+
+Optional `params.query` requests per-region counts in `query_stats`. Pass either:
+
+- A single string: `"HXB2F:500-700"`
+- Several regions in one string, separated by semicolons: `"HXB2F:500-700;HXB2F:800-900"`
+- A list of such strings from Snakemake
+
+Format matches `cigarmath/slice`: `ref:start-end`. Reference names may include letters, digits, `_`, `.`, and `-` (e.g. `NC_045512.2:100-200`). Coordinates use the **same overlap rule as slice** (read overlaps the interval if it would be counted as overlapping that window in the slice wrapper). Each read is attributed to `segments[0].reference_name` so queries are scoped to the correct contig in multi-reference BAMs.
+
+**Definitions:**
+
+- **reads_covering**: reads whose alignment span overlaps the query interval on that reference.
+- **reads_with_deletion_overlapping**: reads counted above that also carry at least one reported deletion block (after `min_deletion_size`, allowedlist, and optional `merge_distance`) whose reference interval overlaps the query (half-open intervals, consistent with `cigarmath.reference_deletion_blocks`).
+
+If `query` is absent or empty, `query_stats` is written with a header row only.
+
 ## Parameters
 
 - `min_deletion_size` (int, optional): Minimum size of deletions to detect. Defaults to 50.
 - `merge_distance` (int, optional): Maximum coordinate distance (in bases) between two deletion blocks' starts **and** ends for them to be merged into a single representative block. The representative is chosen as the block with the highest read count. Set to 0 (default) to disable merging.
 - `sample_name` (str, optional): Sample name to include in metrics. Defaults to "sample".
+- `query` (str, list, optional): Region(s) for `query_stats`; see [Query regions](#query-regions).
 
 ## Input
 
@@ -121,6 +145,19 @@ Contains one row per unique deletion (or merged representative when `merge_dista
 | `deletion_size` | Size of deletion (end - start) |
 | `read_count` | Number of reads containing this deletion |
 | `coverage_count` | Number of reads fully covering this deletion region |
+
+### Query-region CSV (`query_stats`)
+
+One row per requested region when `params.query` is non-empty; otherwise header only.
+
+| Column | Description |
+|--------|-------------|
+| `region` | Original region token from `query` |
+| `reference` | Reference sequence name |
+| `start` | Interval start (same convention as slice) |
+| `end` | Interval end |
+| `reads_covering` | Reads overlapping that interval on that reference |
+| `reads_with_deletion_overlapping` | Of those reads, how many have a deletion overlapping the interval |
 
 ### Summary YAML (`summary`)
 

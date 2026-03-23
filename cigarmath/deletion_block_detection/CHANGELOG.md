@@ -5,6 +5,16 @@ All notable changes to this wrapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-23
+
+### Added
+- `params.query`: optional list of regions (`ref:start-end`) or one string with multiple regions separated by semicolons (e.g. `HXB2F:500-700;HXB2F:800-900`). Coordinates follow the same convention as `cigarmath/slice` (overlap logic matches that wrapper).
+- Output `query_stats`: CSV with columns `region`, `reference`, `start`, `end`, `reads_covering`, `reads_with_deletion_overlapping`. When `query` is unset or empty, the file contains a header row only.
+- Wider reference-name parsing for regions (alphanumeric, `.`, `-`, `_`) for RefSeq-style contig names.
+
+### Changed
+- Version bumped to 1.2.0
+
 ## [1.1.0] - 2026-03-13
 
 ### Added

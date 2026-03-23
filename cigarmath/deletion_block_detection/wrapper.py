@@ -4,17 +4,86 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2026"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import math
+import re
 import yaml
 import csv
 from collections import Counter, defaultdict
-from typing import Dict, Set, Tuple, List, Optional
+from typing import Dict, Set, Tuple, List, Optional, Any
 import cigarmath as cm  # type: ignore
 
 if "snakemake" not in locals():
     import snakemake  # type: ignore
+
+
+def parse_region(region_str: str) -> Tuple[str, Optional[int], Optional[int]]:
+    """Parse region string in format 'ref:start-end' or 'ref' (same convention as cigarmath/slice).
+
+    Reference names may include alphanumerics, underscores, dots, and hyphens (e.g. NC_045512.2).
+    """
+    region_str = region_str.strip()
+    match = re.match(r"([\w.-]+)(?::(\d+)-(\d+))?", region_str)
+    if not match:
+        raise ValueError(
+            f"Invalid region format: {region_str!r}. Expected 'ref:start-end' or 'ref'"
+        )
+    ref = match.group(1)
+    start = int(match.group(2)) if match.group(2) else None
+    end = int(match.group(3)) if match.group(3) else None
+    return ref, start, end
+
+
+def normalize_query_param(raw: Any) -> List[str]:
+    """Turn params.query into a list of region tokens (semicolon-separated in CSV cells)."""
+    if raw is None:
+        return []
+    if isinstance(raw, float) and math.isnan(raw):
+        return []
+    if isinstance(raw, str):
+        s = raw.strip()
+        if not s:
+            return []
+        parts = []
+        for tok in s.split(";"):
+            t = tok.strip()
+            if t:
+                parts.append(t)
+        return parts
+    if isinstance(raw, (list, tuple)):
+        out: List[str] = []
+        for item in raw:
+            out.extend(normalize_query_param(item))
+        return out
+    return normalize_query_param(str(raw))
+
+
+def parse_query_regions(tokens: List[str]) -> List[Tuple[str, str, int, int]]:
+    """Return list of (original_token, reference, start, end). start/end required."""
+    regions: List[Tuple[str, str, int, int]] = []
+    for tok in tokens:
+        ref, qs, qe = parse_region(tok)
+        if qs is None or qe is None:
+            raise ValueError(
+                f"Query region {tok!r} must include coordinates (ref:start-end), not reference-only."
+            )
+        regions.append((tok, ref, qs, qe))
+    return regions
+
+
+def read_overlaps_query_interval(
+    read_start: int, read_end: int, q_start: int, q_end: int
+) -> bool:
+    """Same overlap rule as cigarmath/slice: read interval overlaps [q_start, q_end)."""
+    return read_start < q_end and read_end > q_start
+
+
+def deletion_overlaps_query_interval(
+    del_start: int, del_end: int, q_start: int, q_end: int
+) -> bool:
+    """Half-open deletion [del_start, del_end) vs query [q_start, q_end)."""
+    return del_start < q_end and del_end > q_start
 
 
 def parse_allowedlist(allowedlist_path: str) -> Set[Tuple[int, int]]:
@@ -141,11 +210,14 @@ input_bams = snakemake.input.bams if hasattr(snakemake.input, 'bams') else list(
 output_reads_csv = snakemake.output.reads
 output_deletions_csv = snakemake.output.deletions
 output_summary_yaml = snakemake.output.summary
+output_query_stats = snakemake.output.query_stats
 
 # Get parameters
 min_deletion_size = snakemake.params.get("min_deletion_size", 50)
 merge_distance = snakemake.params.get("merge_distance", 0)
 sample_name = snakemake.params.get("sample_name", "sample")
+query_raw = snakemake.params.get("query", None)
+query_tokens = normalize_query_param(query_raw)
 
 # Get optional allowedlist
 allowedlist_input = snakemake.input.get("allowedlist", None)
@@ -173,6 +245,7 @@ for start, cigartuples, segments in combined_stream:
     
     total_reads += 1
     read_name = segments[0].query_name
+    reference_name = segments[0].reference_name or ""
     ref_end = start + cm.reference_offset(cigartuples)
     
     deletions = list(cm.reference_deletion_blocks(
@@ -190,6 +263,7 @@ for start, cigartuples, segments in combined_stream:
     
     read_data.append({
         'read_name': read_name,
+        'reference_name': reference_name,
         'reference_start': start,
         'reference_end': ref_end,
         'deletions': ';'.join(f"{d[0]}-{d[1]}" for d in deletions) if deletions else ''
@@ -227,11 +301,12 @@ for read in read_data:
         if read_start <= del_block[0] and read_end >= del_block[1]:
             coverage_counter[del_block] += 1
 
-# Write read-centered CSV
+# Write read-centered CSV (exclude internal reference_name; not part of public schema)
+_read_csv_fields = ['read_name', 'reference_start', 'reference_end', 'deletions']
 with open(output_reads_csv, 'w', newline='') as f:
-    writer = csv.DictWriter(f, fieldnames=['read_name', 'reference_start', 'reference_end', 'deletions'])
+    writer = csv.DictWriter(f, fieldnames=_read_csv_fields)
     writer.writeheader()
-    writer.writerows(read_data)
+    writer.writerows({k: r[k] for k in _read_csv_fields} for r in read_data)
 
 # Write deletion-centered CSV
 deletion_data = []
@@ -274,3 +349,48 @@ summary = {
 with open(output_summary_yaml, 'w') as f:
     f.write('# Cigarmath Deletion Block Detection\n')
     yaml.dump(summary, f, default_flow_style=False)
+
+# Per-query-region coverage vs deletion overlap (optional params.query)
+query_fieldnames = [
+    'region',
+    'reference',
+    'start',
+    'end',
+    'reads_covering',
+    'reads_with_deletion_overlapping',
+]
+with open(output_query_stats, 'w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=query_fieldnames)
+    writer.writeheader()
+    if query_tokens:
+        query_regions = parse_query_regions(query_tokens)
+        for token, qref, qs, qe in query_regions:
+            reads_covering = 0
+            reads_del_ovl = 0
+            for read in read_data:
+                if (read.get('reference_name') or '') != qref:
+                    continue
+                rs = read['reference_start']
+                re = read['reference_end']
+                if not read_overlaps_query_interval(rs, re, qs, qe):
+                    continue
+                reads_covering += 1
+                del_str = read.get('deletions') or ''
+                dels: List[Tuple[int, int]] = []
+                if del_str.strip():
+                    dels = [
+                        tuple(map(int, x.split('-')))  # type: ignore[misc]
+                        for x in del_str.split(';')
+                    ]
+                if any(
+                    deletion_overlaps_query_interval(d0, d1, qs, qe) for d0, d1 in dels
+                ):
+                    reads_del_ovl += 1
+            writer.writerow({
+                'region': token,
+                'reference': qref,
+                'start': qs,
+                'end': qe,
+                'reads_covering': reads_covering,
+                'reads_with_deletion_overlapping': reads_del_ovl,
+            })
