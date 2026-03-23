@@ -8,6 +8,7 @@ Config keys (config.yaml or run.meta.yaml):
     samples_csv     : path to samples CSV (default: samples.csv)
     MIN_DELETION_SIZE       : optional; min deletion length for deletion_block_detection (default: 50)
     DELETION_MERGE_DISTANCE : optional; merge nearby deletion blocks (default: 10)
+    DEBUG_DELETION_QUERY    : optional; if true (default), wrapper logs query param resolution to the rule log
     damlab_prefix   : base location for damlab-wrappers. Can be:
                         - a local filesystem path  (e.g. /path/to/damlab-wrappers)
                         - a URL                    (e.g. https://raw.githubusercontent.com/...)
@@ -292,6 +293,7 @@ rule deletion_block_detection:
         merge_distance=config.get("DELETION_MERGE_DISTANCE", 10),
         sample_name=lambda wc: wc.sample_name,
         deletion_query=lambda wc: _opt_deletion_query(wc),
+        debug_deletion_query=config.get("DEBUG_DELETION_QUERY", True),
     log:
         "logs/{sample_name}.deletion_detection.log",
     wrapper:

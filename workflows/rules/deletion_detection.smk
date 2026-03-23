@@ -21,6 +21,7 @@ rule deletion_block_detection:
         merge_distance=config.get('DELETION_MERGE_DISTANCE', 10),
         sample_name=lambda wildcards: wildcards.sample,
         deletion_query=config.get('DELETION_QUERY', None),
+        debug_deletion_query=config.get('DEBUG_DELETION_QUERY', True),
     log:
         'deletion_detection/{sample}.deletion_detection.log'
     wrapper:

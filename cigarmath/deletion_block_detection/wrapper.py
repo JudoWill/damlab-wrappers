@@ -4,10 +4,12 @@ __author__ = "Will Dampier"
 __copyright__ = "Copyright 2026"
 __email__ = "wnd22@drexel.edu"
 __license__ = "MIT"
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
+import logging
 import math
 import re
+import sys
 import yaml
 import csv
 from collections import Counter, defaultdict
@@ -16,6 +18,88 @@ import cigarmath as cm  # type: ignore
 
 if "snakemake" not in locals():
     import snakemake  # type: ignore
+
+
+def _setup_query_debug_logger(sample_name: str = "") -> logging.Logger:
+    """Log to the rule log file (``snakemake.log``) when present, else stderr."""
+    log = logging.getLogger("cigarmath.deletion_block_detection")
+    log.handlers.clear()
+    log.setLevel(logging.DEBUG)
+    log.propagate = False
+    tag = f" sample={sample_name!r}" if sample_name else ""
+    fmt = logging.Formatter(f"[deletion_block_detection{tag}] %(message)s")
+    path = None
+    if hasattr(snakemake, "log") and snakemake.log:
+        try:
+            path = snakemake.log[0]
+        except (TypeError, IndexError, AttributeError):
+            path = None
+    if path:
+        h: logging.Handler = logging.FileHandler(path, mode="w", encoding="utf-8")
+    else:
+        h = logging.StreamHandler(sys.stderr)
+    h.setFormatter(fmt)
+    log.addHandler(h)
+    return log
+
+
+def _log_query_param_introspection(
+    log: logging.Logger, params: Any, query_raw: Any, query_tokens: List[str]
+) -> None:
+    """Emit how Snakemake params resolve for ``deletion_query`` / ``query`` (debugging)."""
+    log.info("wrapper version %s", __version__)
+    try:
+        keys = list(params.keys()) if hasattr(params, "keys") else []
+    except Exception as e:
+        keys = ["<keys() failed: %s>" % e]
+    log.info("snakemake.params keys (%d): %s", len(keys), keys)
+    gdq = getattr(params, "deletion_query", "<no such attribute>")
+    gq = getattr(params, "query", "<no such attribute>")
+    log.info("getattr(params, 'deletion_query'): %r (type=%s)", gdq, type(gdq).__name__)
+    log.info("getattr(params, 'query'): %r (type=%s)", gq, type(gq).__name__)
+    if hasattr(params, "get"):
+        log.info("params.get('deletion_query'): %r", params.get("deletion_query"))
+        log.info("params.get('query'): %r", params.get("query"))
+    if hasattr(params, "__dict__"):
+        # Namedlist stores named params on the instance; helps when .get misses
+        d = getattr(params, "__dict__", {})
+        log.info(
+            "params.__dict__ keys overlapping query: %s",
+            [k for k in d if "query" in k.lower() or "deletion" in k.lower()],
+        )
+    log.info(
+        "resolved query_raw after unwrap: %r (type=%s)",
+        query_raw,
+        type(query_raw).__name__,
+    )
+    log.info("query_tokens (%d): %s", len(query_tokens), query_tokens)
+
+
+def _log_reference_names_for_query_debug(
+    log: logging.Logger, read_data: List[dict], query_regions: List[Tuple[str, str, int, int]]
+) -> None:
+    """If query refs may not match BAM @SQ SN, show what references appear in alignments."""
+    if not read_data:
+        log.info("reference_name debug: no reads in read_data")
+        return
+    ref_counts: Counter = Counter(
+        (r.get("reference_name") or "") for r in read_data
+    )
+    top = ref_counts.most_common(8)
+    log.info(
+        "reference_name counts (top 8, empty string = unmapped/unknown): %s",
+        top,
+    )
+    if query_regions:
+        wanted = {qref for _, qref, _, _ in query_regions}
+        present = set(ref_counts.keys())
+        missing = wanted - present
+        if missing:
+            log.warning(
+                "query reference(s) %s never appear in alignments; "
+                "reads_covering will be 0 unless @SQ SN matches exactly (check samtools view -H).",
+                sorted(missing),
+            )
 
 
 def parse_region(region_str: str) -> Tuple[str, Optional[int], Optional[int]]:
@@ -242,8 +326,15 @@ output_query_stats = snakemake.output.query_stats
 min_deletion_size = snakemake.params.get("min_deletion_size", 50)
 merge_distance = snakemake.params.get("merge_distance", 0)
 sample_name = snakemake.params.get("sample_name", "sample")
+_debug_deletion_query = snakemake.params.get("debug_deletion_query", True)
+
+_dbg = _setup_query_debug_logger(sample_name)
 query_raw = _unwrap_scalar(_resolve_query_raw_from_params(snakemake.params))
 query_tokens = normalize_query_param(query_raw)
+
+_dbg.info("input_bams=%r", input_bams)
+if _debug_deletion_query:
+    _log_query_param_introspection(_dbg, snakemake.params, query_raw, query_tokens)
 
 # Get optional allowedlist
 allowedlist_input = snakemake.input.get("allowedlist", None)
@@ -327,6 +418,17 @@ for read in read_data:
         if read_start <= del_block[0] and read_end >= del_block[1]:
             coverage_counter[del_block] += 1
 
+query_regions_parsed: List[Tuple[str, str, int, int]] = []
+if query_tokens:
+    try:
+        query_regions_parsed = parse_query_regions(query_tokens)
+    except ValueError as err:
+        _dbg.error("parse_query_regions failed (writing header-only query_stats): %s", err)
+        query_regions_parsed = []
+
+if _debug_deletion_query and query_regions_parsed:
+    _log_reference_names_for_query_debug(_dbg, read_data, query_regions_parsed)
+
 # Write read-centered CSV (exclude internal reference_name; not part of public schema)
 _read_csv_fields = ['read_name', 'reference_start', 'reference_end', 'deletions']
 with open(output_reads_csv, 'w', newline='') as f:
@@ -388,9 +490,8 @@ query_fieldnames = [
 with open(output_query_stats, 'w', newline='') as f:
     writer = csv.DictWriter(f, fieldnames=query_fieldnames)
     writer.writeheader()
-    if query_tokens:
-        query_regions = parse_query_regions(query_tokens)
-        for token, qref, qs, qe in query_regions:
+    if query_regions_parsed:
+        for token, qref, qs, qe in query_regions_parsed:
             reads_covering = 0
             reads_del_ovl = 0
             for read in read_data:
@@ -412,11 +513,23 @@ with open(output_query_stats, 'w', newline='') as f:
                     deletion_overlaps_query_interval(d0, d1, qs, qe) for d0, d1 in dels
                 ):
                     reads_del_ovl += 1
-            writer.writerow({
+            row = {
                 'region': token,
                 'reference': qref,
                 'start': qs,
                 'end': qe,
                 'reads_covering': reads_covering,
                 'reads_with_deletion_overlapping': reads_del_ovl,
-            })
+            }
+            writer.writerow(row)
+            if _debug_deletion_query:
+                _dbg.info(
+                    "query_stats %s",
+                    row,
+                )
+    elif query_tokens and not query_regions_parsed:
+        _dbg.warning(
+            "query_tokens non-empty but query_regions_parsed empty (parse error above); CSV is header-only"
+        )
+    elif not query_tokens and _debug_deletion_query:
+        _dbg.info("no query tokens; query_stats CSV is header-only")

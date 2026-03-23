@@ -5,6 +5,15 @@ All notable changes to this wrapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-03-23
+
+### Added
+- Debug logging for query-region resolution: logs to the Snakemake rule log file (``snakemake.log``) when set, else stderr. Includes param keys, ``getattr``/``.get`` for ``deletion_query`` and ``query``, resolved raw value, tokens, BAM ``reference_name`` histogram vs query refs, and each ``query_stats`` row.
+- Param ``debug_deletion_query`` (default ``True``); set to ``False`` in rule params or ``DEBUG_DELETION_QUERY: false`` in config to silence.
+
+### Changed
+- Version bumped to 1.2.2
+
 ## [1.2.1] - 2026-03-23
 
 ### Fixed

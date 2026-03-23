@@ -216,6 +216,7 @@ Override with `--configfile` on the command line.
 | `samples_csv` | `samples.csv` | Path to the samples CSV file, relative to the working directory (`ROOT`). |
 | `MIN_DELETION_SIZE` | `50` | Minimum deletion length (bp) for `deletion_block_detection`. |
 | `DELETION_MERGE_DISTANCE` | `10` | Merge deletion blocks whose coordinates are within this distance. |
+| `DEBUG_DELETION_QUERY` | `true` | If true, the deletion wrapper writes query-param diagnostics to `logs/{sample_name}.deletion_detection.log`. Set to `false` to turn off. |
 | `damlab_prefix` | GitHub `main` branch | Base URL or local path for damlab-wrappers. See below. |
 
 ### `damlab_prefix`

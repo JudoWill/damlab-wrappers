@@ -4,7 +4,7 @@ A wrapper for detecting deletion blocks from BAM files using the cigarmath libra
 
 ## Version
 
-Current version: 1.2.1
+Current version: 1.2.2
 
 For a detailed list of changes, see the [CHANGELOG.md](CHANGELOG.md).
 
@@ -113,6 +113,11 @@ If both are absent or empty, `query_stats` is written with a header row only.
 - `merge_distance` (int, optional): Maximum coordinate distance (in bases) between two deletion blocks' starts **and** ends for them to be merged into a single representative block. The representative is chosen as the block with the highest read count. Set to 0 (default) to disable merging.
 - `sample_name` (str, optional): Sample name to include in metrics. Defaults to "sample".
 - `deletion_query` (str, list, optional): Region(s) for `query_stats`; see [Query regions](#query-regions). Alias: `query` (legacy).
+- `debug_deletion_query` (bool, optional): If true (default), write diagnostic lines to the Snakemake rule log (`log:` in the Snakefile) about how `deletion_query`/`query` were resolved, which reference names appear in the BAM, and each `query_stats` row. Set to false to disable.
+
+### Debugging empty `query_stats` rows
+
+If the CSV only has a header, open `logs/{sample}.deletion_detection.log` (or your rule’s `log:` path). The wrapper logs whether tokens were parsed, param introspection (Snakemake sometimes exposes `Namedlist` params inconsistently), and the top `reference_name` values in the BAM versus your query `ref:` so you can spot `@SQ` mismatches.
 
 ## Input
 
