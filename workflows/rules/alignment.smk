@@ -65,4 +65,4 @@ rule index_reads:
 rule align_all:
     input:
         expand('aligned/{sample}.sorted.bam', sample=SAMPLES['sample_name'].unique()),
-        expand(''aligned/{sample}.sorted.bam.bai', sample=SAMPLES['sample_name'].unique()),
+        expand('aligned/{sample}.sorted.bam.bai', sample=SAMPLES['sample_name'].unique()),
