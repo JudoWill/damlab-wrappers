@@ -10,6 +10,7 @@ Config keys (config.yaml or run.meta.yaml):
     DELETION_MERGE_DISTANCE : optional; merge nearby deletion blocks (default: 10)
     DEBUG_DELETION_QUERY    : optional; if true (default), wrapper logs query param resolution to the rule log
     CRISPRESSO_EXTRA        : optional; extra CLI args for CRISPResso (crispresso rule). Default: --disable_guardrails
+    MIN_READS_FOR_CRISPRESSO : optional; BAM-derived FASTQs (bam_to_fastq / slice) need at least this many reads (line_count // 4) for CRISPResso; default 10. CSV fastq_r1 mode is not gated.
     damlab_prefix   : base location for damlab-wrappers. Can be:
                         - a local filesystem path  (e.g. /path/to/damlab-wrappers)
                         - a URL                    (e.g. https://raw.githubusercontent.com/...)
@@ -143,6 +144,44 @@ def get_input_mode(row):
     return "fastq"
 
 
+READ_GATE_NO_BAM_DERIVED = "qc/.read_gate_no_bam_derived"
+
+
+def bam_derived_fastq_paths():
+    """Paths to FASTQs this workflow generates from BAM (slice or bam2fastx), in CSV row order."""
+    paths = []
+    for _, row in SAMPLES.iterrows():
+        mode = get_input_mode(row)
+        if mode == "bam_region":
+            paths.append(f"fastq/{row['sample_name']}.slice.fastq")
+        elif mode == "bam":
+            paths.append(f"fastq/{row['sample_name']}.bam.fastq")
+    return paths
+
+
+def read_gate_checkpoint_fastqs(wildcards):
+    """Checkpoint inputs: all BAM-derived FASTQs, or a sentinel when there are none."""
+    p = bam_derived_fastq_paths()
+    return p if p else [READ_GATE_NO_BAM_DERIVED]
+
+
+def _sample_name_from_bam_derived_fq(fq_path):
+    base = os.path.basename(str(fq_path))
+    if base.endswith(".slice.fastq"):
+        return base[: -len(".slice.fastq")]
+    if base.endswith(".bam.fastq"):
+        return base[: -len(".bam.fastq")]
+    raise ValueError(f"Unexpected BAM-derived FASTQ path: {fq_path}")
+
+
+def _line_count_fast(path):
+    n = 0
+    with open(path, "rb") as fh:
+        for _ in fh:
+            n += 1
+    return n
+
+
 def is_amplicon_file(value):
     """Return True if the amplicon value is a path to an existing file."""
     return os.path.exists(str(value))
@@ -220,19 +259,36 @@ def get_amplicon_fasta(wildcards):
 # Output collection helpers
 # ---------------------------------------------------------------------------
 
+def crispresso_eligible_samples(wildcards):
+    """Samples that receive CRISPResso outputs: all fastq-mode rows plus BAM-derived rows that pass read gate."""
+    ckpt = checkpoints.read_gate_aggregate.get()
+    passed_path = ckpt.output.passed
+    with open(passed_path) as fh:
+        passed_bam = {ln.strip() for ln in fh if ln.strip()}
+    eligible = []
+    for _, row in SAMPLES.iterrows():
+        name = row["sample_name"]
+        mode = get_input_mode(row)
+        if mode == "fastq" or name in passed_bam:
+            eligible.append(name)
+    return eligible
+
+
 def get_all_crispresso_outputs(wildcards):
     return [
         f"crispresso/CRISPResso_on_{s}"
-        for s in SAMPLES["sample_name"].tolist()
+        for s in crispresso_eligible_samples(wildcards)
     ]
 
 
 def get_all_compare_outputs(wildcards):
     if not HAS_COMPARISON:
         return []
+    eligible = set(crispresso_eligible_samples(wildcards))
     return [
         f"crispresso/CRISPRessoCompare_{exp}_vs_{ctrl}"
         for exp, ctrl in itertools.product(EXPERIMENT_SAMPLES, CONTROL_SAMPLES)
+        if exp in eligible and ctrl in eligible
     ]
 
 
@@ -305,6 +361,50 @@ rule bam_to_fastq:
         "logs/{sample_name}.bam2fastx.log",
     wrapper:
         wrapper_path("cigarmath/bam2fastx")
+
+
+rule read_gate_no_bam_derived:
+    """Placeholder input when samples.csv has no BAM-derived FASTQs (checkpoint needs non-empty input)."""
+    output:
+        touch(READ_GATE_NO_BAM_DERIVED),
+
+
+checkpoint read_gate_aggregate:
+    """After BAM-derived FASTQs exist, list samples with enough reads for CRISPResso."""
+    input:
+        fastqs=read_gate_checkpoint_fastqs,
+    output:
+        passed="qc/passed_bam_samples.txt",
+    log:
+        "logs/read_gate_aggregate.log",
+    run:
+        min_reads = int(config.get("MIN_READS_FOR_CRISPRESSO", 10))
+        out_path = Path(output.passed)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        raw = input.fastqs
+        if isinstance(raw, str):
+            paths = [raw]
+        else:
+            paths = list(raw)
+        lines_out = []
+        with open(log[0], "w") as logf:
+            if (
+                len(paths) == 1
+                and str(paths[0]).endswith(".read_gate_no_bam_derived")
+            ):
+                logf.write("No BAM-derived FASTQs in samples.csv; gate passes none.\n")
+            else:
+                for fq in paths:
+                    n_lines = _line_count_fast(fq)
+                    n_reads = n_lines // 4
+                    sample = _sample_name_from_bam_derived_fq(fq)
+                    logf.write(
+                        f"{sample}\t{fq}\tlines={n_lines}\treads={n_reads}\t"
+                        f"min_reads={min_reads}\tpass={n_reads >= min_reads}\n"
+                    )
+                    if n_reads >= min_reads:
+                        lines_out.append(sample)
+        out_path.write_text("\n".join(lines_out) + ("\n" if lines_out else ""))
 
 
 rule deletion_block_detection:
