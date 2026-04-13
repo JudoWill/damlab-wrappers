@@ -1,0 +1,3 @@
+region,reference,start,end,reads_covering,reads_with_deletion_overlapping
+HXB2F:50-200,HXB2F,50,200,39,39
+HXB2F:400-1200,HXB2F,400,1200,39,39

@@ -250,6 +250,8 @@ def test_deletion_block_detection():
         "deletion_block_detection-deletion_frequency",
         "deletion_block_detection-reads_with_deletions",
         "deletion_block_detection-unique_deletion_count",
+        "deletion_block_detection-deletion_richness",
+        "deletion_block_detection-deletion_shannon_entropy",
     ]
     assert all(col in data[0] for col in wanted_cols), \
         f"Missing columns. Available: {list(data[0].keys())}"
@@ -273,6 +275,23 @@ def test_deletion_block_detection():
         assert unique_dels >= 0, \
             f"Sample {sample}: unique_deletion_count should be non-negative"
 
+        richness = float(row['deletion_block_detection-deletion_richness'])
+        assert richness == unique_dels, \
+            f"Sample {sample}: richness should match unique_deletion_count"
+
+        shannon = float(row['deletion_block_detection-deletion_shannon_entropy'])
+        assert shannon >= 0.0, f"Sample {sample}: Shannon entropy should be non-negative"
+
+
+def test_deletion_block_detection_top_plots_in_report():
+    """Heatmap and table sections are present in the HTML report."""
+    path = "build/multiqc/multiqc_report.html"
+    assert os.path.exists(path)
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        html = f.read()
+    assert "deletion_block_top_heatmap" in html
+    assert "deletion_block_top_table" in html
+
 
 def test_deletion_block_detection_output_files():
     """Test that deletion block detection output files are created correctly."""
@@ -295,7 +314,10 @@ def test_deletion_block_detection_output_files():
         assert metrics['unique_deletion_count'] >= 0
         assert metrics['total_deletion_count'] >= 0
         assert 0.0 <= metrics['deletion_frequency'] <= 1.0
-        
+        assert 'top_deletions' in metrics and isinstance(metrics['top_deletions'], list)
+        assert 'targeted_regions' in metrics
+        assert metrics.get('targeted_region_count', len(metrics.get('targeted_regions') or [])) == 0
+
         # Check reads CSV exists and has correct structure
         assert os.path.exists(reads_path), f"Missing {reads_path}"
         with open(reads_path, 'r') as f:

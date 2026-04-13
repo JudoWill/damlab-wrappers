@@ -6,6 +6,9 @@ slicing via cigarmath/slice).
 
 Config keys (config.yaml or run.meta.yaml):
     samples_csv     : path to samples CSV (default: samples.csv)
+    MIN_DELETION_SIZE       : optional; min deletion length for deletion_block_detection (default: 50)
+    DELETION_MERGE_DISTANCE : optional; merge nearby deletion blocks (default: 10)
+    DEBUG_DELETION_QUERY    : optional; if true (default), wrapper logs query param resolution to the rule log
     damlab_prefix   : base location for damlab-wrappers. Can be:
                         - a local filesystem path  (e.g. /path/to/damlab-wrappers)
                         - a URL                    (e.g. https://raw.githubusercontent.com/...)
@@ -23,6 +26,9 @@ samples.csv columns:
     region       (optional) chr:start-stop, only used with bam_file
     comparison   (optional) 'experiment' or 'control' — enables CRISPRessoCompare
                             every experiment sample is compared to every control
+    deletion_query (optional) regions for per-region deletion/coverage stats on the BAM
+                            (ref:start-end; multiple separated by ';'). Passed to
+                            cigarmath/deletion_block_detection as params.deletion_query. BAM samples only.
 """
 
 import os
@@ -59,7 +65,25 @@ def wrapper_path(subpath):
 # Load samples
 # ---------------------------------------------------------------------------
 
-SAMPLES = pd.read_csv(config.get("samples_csv", "samples.csv"))
+
+def _normalize_sample_table_columns(df):
+    """Strip UTF-8 BOM and surrounding whitespace from CSV headers (common Excel/export issue)."""
+    out = df.copy()
+    out.columns = (
+        out.columns.astype(str)
+        .str.replace("\ufeff", "", regex=False)
+        .str.strip()
+    )
+    return out
+
+
+SAMPLES = _normalize_sample_table_columns(
+    pd.read_csv(config.get("samples_csv", "samples.csv"), encoding="utf-8-sig")
+)
+
+# Align sample_name with Snakemake wildcards (trim accidental spaces from spreadsheet exports)
+if "sample_name" in SAMPLES.columns:
+    SAMPLES["sample_name"] = SAMPLES["sample_name"].astype(str).str.strip()
 
 # ---------------------------------------------------------------------------
 # Comparison detection (optional column)
@@ -101,6 +125,14 @@ def _notna(value):
         return False
 
 
+if "bam_file" in SAMPLES.columns:
+    BAM_SAMPLE_NAMES = SAMPLES.loc[
+        SAMPLES["bam_file"].apply(_notna), "sample_name"
+    ].tolist()
+else:
+    BAM_SAMPLE_NAMES = []
+
+
 def get_input_mode(row):
     """Return 'bam_region', 'bam', or 'fastq' for a sample row."""
     if _notna(row.get("bam_file")):
@@ -113,6 +145,38 @@ def get_input_mode(row):
 def is_amplicon_file(value):
     """Return True if the amplicon value is a path to an existing file."""
     return os.path.exists(str(value))
+
+
+def _opt(wildcards, col):
+    """Return the value of an optional samples.csv column, or None if absent/NaN."""
+    row = get_sample(wildcards)
+    v = row.get(col) if hasattr(row, "get") else None
+    if not _notna(v):
+        return None
+    return v
+
+
+def _cell_by_logical_column(row, logical_name: str):
+    """Read one cell; match column by case-insensitive stripped name (handles odd CSV headers)."""
+    if not hasattr(row, "index"):
+        return None
+    want = logical_name.strip().lower()
+    for col in row.index:
+        key = str(col).replace("\ufeff", "").strip().lower()
+        if key == want:
+            return row[col]
+    return None
+
+
+def _opt_deletion_query(wildcards):
+    """``deletion_query`` cell as a trimmed string (always ``str()`` for pandas/numpy scalars)."""
+    row = get_sample(wildcards)
+    v = _cell_by_logical_column(row, "deletion_query")
+    if v is None and hasattr(row, "get"):
+        v = row.get("deletion_query")
+    if not _notna(v):
+        return None
+    return str(v).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -171,11 +235,27 @@ def get_all_compare_outputs(wildcards):
     ]
 
 
+def get_all_deletion_outputs(wildcards):
+    """Deletion block detection outputs (BAM-backed samples only)."""
+    paths = []
+    for s in BAM_SAMPLE_NAMES:
+        paths.extend(
+            [
+                f"deletion_detection/{s}.deletion_reads.csv",
+                f"deletion_detection/{s}.deletion_blocks.csv",
+                f"deletion_detection/{s}.deletion_summary.yaml",
+                f"deletion_detection/{s}.deletion_query_stats.csv",
+            ]
+        )
+    return paths
+
+
 def get_all_outputs(wildcards):
     return (
         get_all_crispresso_outputs(wildcards)
         + get_all_compare_outputs(wildcards)
         + ["crispresso/CRISPRessoAggregate_on_all"]
+        + get_all_deletion_outputs(wildcards)
     )
 
 
@@ -226,9 +306,30 @@ rule bam_to_fastq:
         wrapper_path("cigarmath/bam2fastx")
 
 
-def _opt(wildcards, col):
-    """Return the value of an optional samples.csv column, or None if absent/NaN."""
-    return get_sample(wildcards).get(col) if _notna(get_sample(wildcards).get(col)) else None
+rule deletion_block_detection:
+    """Detect reference deletion blocks per sample (cigarmath/deletion_block_detection).
+
+    Runs only for rows with ``bam_file`` set. Uses the same BAM as slice/bam2fastq.
+    Optional ``deletion_query`` column is passed as ``params.deletion_query`` (regions
+    ``ref:start-end``, multiple separated by semicolons); see wrapper README.
+    """
+    input:
+        bams=lambda wc: get_sample(wc)["bam_file"],
+    output:
+        reads="deletion_detection/{sample_name}.deletion_reads.csv",
+        deletions="deletion_detection/{sample_name}.deletion_blocks.csv",
+        summary="deletion_detection/{sample_name}.deletion_summary.yaml",
+        query_stats="deletion_detection/{sample_name}.deletion_query_stats.csv",
+    params:
+        min_deletion_size=config.get("MIN_DELETION_SIZE", 50),
+        merge_distance=config.get("DELETION_MERGE_DISTANCE", 10),
+        sample_name=lambda wc: wc.sample_name,
+        deletion_query=lambda wc: _opt_deletion_query(wc),
+        debug_deletion_query=config.get("DEBUG_DELETION_QUERY", True),
+    log:
+        "logs/{sample_name}.deletion_detection.log",
+    wrapper:
+        wrapper_path("cigarmath/deletion_block_detection")
 
 
 rule crispresso:

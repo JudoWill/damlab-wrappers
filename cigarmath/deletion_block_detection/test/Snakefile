@@ -1,12 +1,20 @@
 # Get the directory of the current Snakefile
 TEST_ROOT_cigarmath__DBD = Path(workflow.snakefile).parent
+WRAPPER_VERSION = "v5.8.0"
 
 
 rule test_cigarmath__DBD__all:
     input:
-        files = [TEST_ROOT_cigarmath__DBD/'test_output/reads.csv',
-                TEST_ROOT_cigarmath__DBD/'test_output/deletions.csv',
-                TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml'],
+        files = [
+            TEST_ROOT_cigarmath__DBD/'test_output/reads.csv',
+            TEST_ROOT_cigarmath__DBD/'test_output/deletions.csv',
+            TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml',
+            TEST_ROOT_cigarmath__DBD/'test_output/query_stats.csv',
+            TEST_ROOT_cigarmath__DBD/'test_output_query/reads.csv',
+            TEST_ROOT_cigarmath__DBD/'test_output_query/deletions.csv',
+            TEST_ROOT_cigarmath__DBD/'test_output_query/summary.yaml',
+            TEST_ROOT_cigarmath__DBD/'test_output_query/query_stats.csv',
+        ],
         tests = [TEST_ROOT_cigarmath__DBD/"tests.py"]
     conda: 'env.yaml'
     log: 
@@ -20,10 +28,27 @@ rule test_cigarmath__DBD__deletion_block_detection:
     output:
         reads = TEST_ROOT_cigarmath__DBD/'test_output/reads.csv',
         deletions = TEST_ROOT_cigarmath__DBD/'test_output/deletions.csv',
-        summary = TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml'
+        summary = TEST_ROOT_cigarmath__DBD/'test_output/summary.yaml',
+        query_stats = TEST_ROOT_cigarmath__DBD/'test_output/query_stats.csv',
     params:
         min_deletion_size = 50,
         sample_name = 'test'
+    wrapper:
+        f"file:{TEST_ROOT_cigarmath__DBD.parent}"
+
+
+rule test_cigarmath__DBD__deletion_block_detection_query:
+    input:
+        bams = TEST_ROOT_cigarmath__DBD/'test_output/test.bam'
+    output:
+        reads = TEST_ROOT_cigarmath__DBD/'test_output_query/reads.csv',
+        deletions = TEST_ROOT_cigarmath__DBD/'test_output_query/deletions.csv',
+        summary = TEST_ROOT_cigarmath__DBD/'test_output_query/summary.yaml',
+        query_stats = TEST_ROOT_cigarmath__DBD/'test_output_query/query_stats.csv',
+    params:
+        min_deletion_size = 50,
+        sample_name = 'test_query',
+        deletion_query = 'HXB2F:50-200;HXB2F:400-1200',
     wrapper:
         f"file:{TEST_ROOT_cigarmath__DBD.parent}"
 

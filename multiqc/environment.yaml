@@ -4,5 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - pip
+  - snakemake
+  - pytest
   - pip:
     - -e ../multiqc_plugins/

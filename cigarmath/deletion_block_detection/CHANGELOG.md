@@ -5,6 +5,43 @@ All notable changes to this wrapper will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-03-23
+
+### Added
+- Summary YAML: `targeted_regions` (same rows as `query_stats.csv`), `targeted_region_count`, `target_reads_covering_sum`, `target_reads_with_deletion_overlapping_sum`.
+- Summary YAML: `top_deletions` — up to 10 blocks with `deletion_start`, `deletion_end`, `deletion_size`, `read_count`, `coverage_count` (for MultiQC cross-sample plots).
+
+### Changed
+- Version bumped to 1.3.0
+
+## [1.2.2] - 2026-03-23
+
+### Added
+- Debug logging for query-region resolution: logs to the Snakemake rule log file (``snakemake.log``) when set, else stderr. Includes param keys, ``getattr``/``.get`` for ``deletion_query`` and ``query``, resolved raw value, tokens, BAM ``reference_name`` histogram vs query refs, and each ``query_stats`` row.
+- Param ``debug_deletion_query`` (default ``True``); set to ``False`` in rule params or ``DEBUG_DELETION_QUERY: false`` in config to silence.
+
+### Changed
+- Version bumped to 1.2.2
+
+## [1.2.1] - 2026-03-23
+
+### Fixed
+- Resolve region query from Snakemake param ``deletion_query`` first, then legacy ``query`` (``Params.get("query")`` can miss values depending on Snakemake version).
+- Unwrap numpy/pandas scalar params before tokenizing so region strings are recognized.
+
+### Changed
+- Version bumped to 1.2.1
+
+## [1.2.0] - 2026-03-23
+
+### Added
+- `params.query`: optional list of regions (`ref:start-end`) or one string with multiple regions separated by semicolons (e.g. `HXB2F:500-700;HXB2F:800-900`). Coordinates follow the same convention as `cigarmath/slice` (overlap logic matches that wrapper).
+- Output `query_stats`: CSV with columns `region`, `reference`, `start`, `end`, `reads_covering`, `reads_with_deletion_overlapping`. When `query` is unset or empty, the file contains a header row only.
+- Wider reference-name parsing for regions (alphanumeric, `.`, `-`, `_`) for RefSeq-style contig names.
+
+### Changed
+- Version bumped to 1.2.0
+
 ## [1.1.0] - 2026-03-13
 
 ### Added
