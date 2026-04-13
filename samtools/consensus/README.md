@@ -43,7 +43,7 @@ rule consensus:
     log:
         "logs/{sample}.consensus.log"
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/consensus/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/samtools/consensus/"
 ```
 
 ## Example rule (no downsampling)
@@ -62,5 +62,5 @@ rule consensus:
     log:
         "logs/{sample}.consensus.log"
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/consensus/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/samtools/consensus/"
 ```

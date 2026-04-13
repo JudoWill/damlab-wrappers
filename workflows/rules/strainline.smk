@@ -12,7 +12,7 @@ rule bam_to_fasta:
     log:
         'strainline/{sample}.bam2fasta.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/cigarmath/bam2fastx/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/cigarmath/bam2fastx/"
 
 rule strainline:
     input:

@@ -80,7 +80,7 @@ checkpoint split_by_deletion_pattern:
     log:
         'deletion_split/{sample}.split.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/cigarmath/split/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/cigarmath/split/"
 
 
 rule sort_deletion_bam:
@@ -138,7 +138,7 @@ rule samtools_consensus_per_deletion:
     log:
         'consensus_split/{sample}/{category}.consensus.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/samtools/consensus/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/samtools/consensus/"
 
 
 rule rename_consensus_for_msa:
@@ -198,4 +198,4 @@ rule muscle_deletion_msa:
     log:
         'consensus_split/{sample}.msa.log'
     wrapper:
-        "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main/MSA/muscle/"
+        "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main/MSA/muscle/"

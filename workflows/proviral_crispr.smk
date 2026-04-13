@@ -9,6 +9,7 @@ Config keys (config.yaml or run.meta.yaml):
     MIN_DELETION_SIZE       : optional; min deletion length for deletion_block_detection (default: 50)
     DELETION_MERGE_DISTANCE : optional; merge nearby deletion blocks (default: 10)
     DEBUG_DELETION_QUERY    : optional; if true (default), wrapper logs query param resolution to the rule log
+    CRISPRESSO_EXTRA        : optional; extra CLI args for CRISPResso (crispresso rule). Default: --disable_guardrails
     damlab_prefix   : base location for damlab-wrappers. Can be:
                         - a local filesystem path  (e.g. /path/to/damlab-wrappers)
                         - a URL                    (e.g. https://raw.githubusercontent.com/...)
@@ -46,7 +47,7 @@ configfile: "run.meta.yaml"
 
 WORKFLOW_DIR = workflow.basedir
 _GITHUB_DEFAULT = (
-    "https://raw.githubusercontent.com/JudoWill/damlab-wrappers/refs/heads/main"
+    "https://raw.githubusercontent.com/DamLabResources/damlab-wrappers/refs/heads/main"
 )
 DL_PREFIX = config.get("damlab_prefix", _GITHUB_DEFAULT)
 
@@ -362,6 +363,7 @@ rule crispresso:
         quantification_window_center = lambda wc: _opt(wc, "quantification_window_center"),
         quantification_window_size   = lambda wc: _opt(wc, "quantification_window_size"),
         expected_hdr_amplicon_seq    = lambda wc: _opt(wc, "expected_hdr_amplicon_seq"),
+        extra                        = config.get("CRISPRESSO_EXTRA", "--disable_guardrails"),
     threads: 4
     log:
         "logs/{sample_name}.crispresso.log",
